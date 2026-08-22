@@ -1,3 +1,7 @@
 openai==1.35.14
 chromadb==0.5.3
 python-dotenv==1.0.1
+
+# Document loading — GY3.19
+pypdf==4.2.0
+beautifulsoup4==4.12.3
