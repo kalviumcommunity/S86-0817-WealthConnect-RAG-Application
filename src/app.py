@@ -4,7 +4,7 @@ app.py — Main conversational entry point for WealthConnect RAG
 Orchestrates the full RAG pipeline:
   1. Accept a natural-language question from a Relationship Manager
   2. Retrieve relevant approved document chunks
-  3. Build a grounded prompt
+  3. Build a structured prompt via prompt_builder (system + user roles)
   4. Call the LLM
   5. Return the answer with source citations
 
@@ -16,6 +16,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 from src.retrieval import retrieve, format_context, build_sources_list
+from src.prompt_builder import load_system_prompt, build_user_message, parse_json_response
 
 load_dotenv()
 
@@ -30,84 +31,74 @@ client = OpenAI(
 
 CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
 
-# ---------------------------------------------------------------------------
-# Prompt template (kept here; move to prompts/ for team-editable templates)
-# ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are WealthConnect, an AI-powered knowledge assistant for a bank's wealth division.
-
-Your role is to help Relationship Managers find accurate, approved information from the bank's 
-wealth-management documents including investment policies, product brochures, tax rules, 
-eligibility guidelines, and risk documents.
-
-Rules you must always follow:
-1. Answer ONLY using the provided document context. Do not use outside knowledge.
-2. If the context does not contain enough information, respond with the fallback message exactly.
-3. Never invent investment, tax, legal, or policy information.
-4. Always reference the source document(s) in your answer.
-5. Be concise and professional.
-
-Fallback message (use when context is insufficient):
-"I couldn't find enough information in the current approved wealth documents to answer this 
-question. Please verify with the appropriate wealth, tax, legal, or compliance team."
-"""
-
-
-def ask(question: str, n_results: int = 5) -> dict:
+def ask(
+    question: str,
+    n_results: int = 5,
+    prompt_variant: str = "strict",
+) -> dict:
     """
     Main RAG function — takes a Relationship Manager's question and returns
     a grounded answer with source references.
 
+    Args:
+        question       : Natural-language question from the RM.
+        n_results      : Number of document chunks to retrieve.
+        prompt_variant : Prompt style — 'strict' (default), 'json', or 'concise'.
+
     Returns:
         {
-            "question": str,
-            "answer":   str,
-            "sources":  list[str]
+            "question"       : str,
+            "answer"         : str,
+            "sources"        : list[str],
+            "prompt_variant" : str,
         }
     """
-    # Step 1: Retrieve relevant approved chunks
+    # Step 1: Retrieve relevant approved chunks from the vector store
     results = retrieve(question, n_results=n_results)
 
-    # Step 2: Build context block and sources list
+    # Step 2: Build formatted context block and human-readable sources list
     context = format_context(results)
     sources = build_sources_list(results)
 
-    # Step 3: Build the user message with context injected
-    if context:
-        user_message = (
-            f"Context from approved wealth documents:\n\n{context}\n\n"
-            f"Relationship Manager Question: {question}"
-        )
-    else:
-        # No documents retrieved — force the safe fallback
-        user_message = (
-            f"No relevant approved documents were found.\n\n"
-            f"Relationship Manager Question: {question}"
-        )
+    # Step 3: Build system and user messages using prompt_builder
+    #   system role  → who the assistant is + grounding rules (loaded from prompts/)
+    #   user role    → the RM's question + retrieved context for this turn
+    system_prompt = load_system_prompt(prompt_variant)
+    user_message  = build_user_message(question, context)
 
     # Step 4: Call the LLM
     response = client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_message},
         ],
-        temperature=0.0,   # Deterministic — we want consistent, grounded answers
+        temperature=0.0,  # Deterministic — grounding requires consistency
     )
 
-    answer = response.choices[0].message.content.strip()
+    raw_answer = response.choices[0].message.content.strip()
+
+    # Step 5: If JSON variant was used, parse the structured output
+    if prompt_variant == "json":
+        parsed = parse_json_response(raw_answer)
+        answer = parsed.get("answer", raw_answer)
+    else:
+        answer = raw_answer
 
     return {
-        "question": question,
-        "answer": answer,
-        "sources": sources,
+        "question":       question,
+        "answer":         answer,
+        "sources":        sources,
+        "prompt_variant": prompt_variant,
     }
 
 
 def print_response(result: dict) -> None:
     """Pretty-print the RAG response to the terminal."""
     print("\n" + "=" * 60)
-    print(f"Question:\n  {result['question']}")
+    print(f"Prompt Variant : {result['prompt_variant']}")
+    print(f"Question       : {result['question']}")
     print("-" * 60)
     print(f"Answer:\n  {result['answer']}")
     print("-" * 60)
@@ -121,7 +112,9 @@ def print_response(result: dict) -> None:
 
 
 if __name__ == "__main__":
-    # Quick smoke-test — replace with your actual question
+    # Smoke-test with all three prompt variants
     sample_question = "What are the tax implications of the ABC Investment Product?"
-    result = ask(sample_question)
-    print_response(result)
+
+    for variant in ["strict", "concise", "json"]:
+        result = ask(sample_question, prompt_variant=variant)
+        print_response(result)

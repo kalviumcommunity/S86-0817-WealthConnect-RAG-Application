@@ -53,23 +53,63 @@ python -m src.app
 
 ```
 S86-0817-WealthConnect-RAG-Application/
-├── data/               # Approved wealth documents (git-ignored — sensitive)
-├── src/                # Application source code
+├── data/                        # Approved wealth documents (git-ignored — sensitive)
+├── src/                         # Application source code
 │   ├── __init__.py
-│   ├── ingest.py       # Document loading, chunking, metadata tagging
-│   ├── embeddings.py   # OpenAI embeddings + ChromaDB vector store
-│   ├── retrieval.py    # Semantic search + source formatting
-│   └── app.py          # Main RAG pipeline + LLM answer generation
-├── prompts/            # Prompt templates (editable without touching code)
-│   ├── rag_system_prompt.txt
-│   └── fallback_message.txt
-├── outputs/            # Generated answers, logs, evaluation results (git-ignored)
-├── .env                # Real secrets — NEVER committed
-├── .env.example        # Template showing required keys — committed, no values
+│   ├── ingest.py                # Document loading, chunking, metadata tagging
+│   ├── embeddings.py            # OpenAI embeddings + ChromaDB vector store
+│   ├── retrieval.py             # Semantic search + source formatting
+│   ├── prompt_builder.py        # System/user role construction, prompt variants
+│   ├── prompt_experiments.py    # GY3.13 prompt comparison & demonstration runner
+│   └── app.py                   # Main RAG pipeline + LLM answer generation
+├── prompts/                     # Prompt templates (editable without touching code)
+│   ├── system_prompt_strict.txt   # Full rules, prose output, source citation
+│   ├── system_prompt_json.txt     # Rules + structured JSON output format
+│   ├── system_prompt_concise.txt  # Minimal, 2–3 sentence cap
+│   ├── rag_system_prompt.txt      # Original base system prompt
+│   └── fallback_message.txt       # Safe fallback message template
+├── outputs/                     # Generated answers, logs, evaluation results (git-ignored)
+├── .env                         # Real secrets — NEVER committed
+├── .env.example                 # Template showing required keys — committed, no values
 ├── .gitignore
-├── requirements.txt    # Pinned dependency versions
+├── requirements.txt             # Pinned dependency versions
 └── README.md
 ```
+
+## Prompt Design (GY3.13)
+
+WealthConnect uses a deliberate system/user role separation to control every answer.
+
+### System vs User Role
+
+| Role | Purpose |
+|------|---------|
+| `system` | Sets who the assistant is, the grounding rules, output format, and fallback behaviour. Static per session. |
+| `user` | Carries the RM's question + retrieved document context for that specific turn. Changes every query. |
+
+The system message is where grounding is enforced — *"answer only from the context"* and *"use the fallback when unsure"* both live there. Keeping prompt templates in `prompts/` files means the Wealth team can adjust tone and rules without touching Python code.
+
+### Prompt Variants
+
+Three variants are available, each with a different output contract:
+
+| Variant | File | Output |
+|---------|------|--------|
+| `strict` | `system_prompt_strict.txt` | Prose answer with source line — default for production |
+| `concise` | `system_prompt_concise.txt` | 2–3 sentence cap — for quick lookups |
+| `json` | `system_prompt_json.txt` | Structured `{ answer, source, confidence }` — for API consumers |
+
+### Running the Prompt Experiments
+
+```bash
+python -m src.prompt_experiments
+```
+
+Runs four experiments:
+1. **Role separation** — prints the raw system and user messages sent to the API
+2. **Variant comparison** — same question through all three variants side by side
+3. **Ambiguous vs clear** — shows how task + scope + format + fallback in the user prompt produces better output
+4. **Fallback behaviour** — verifies all variants return the safe fallback when no context is found
 
 ---
 
