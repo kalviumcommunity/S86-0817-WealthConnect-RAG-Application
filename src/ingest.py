@@ -1,67 +1,50 @@
 """
-ingest.py — Document ingestion pipeline for WealthConnect RAG
+ingest.py — Document Ingestion Pipeline for WealthConnect RAG
 
-Loads approved wealth-management documents from the data/ directory,
-extracts text, chunks it, attaches metadata, and indexes it into the
-vector store so Relationship Managers can retrieve grounded answers.
+Orchestrates the full intake-to-index pipeline:
+  1. Load all documents from data/ via document_loader (multi-format)
+  2. Chunk each document's text with overlap
+  3. Attach WealthConnect metadata to every chunk
+  4. Return chunk records ready for embedding and vector indexing
+
+Now uses document_loader.py (GY3.19) for real multi-format intake:
+  .txt  — plain-text policy extracts
+  .md   — Markdown guidelines and tax rules
+  .pdf  — product brochures (primary format)
+  .html — web-exported compliance pages
 """
 
-import os
 from dotenv import load_dotenv
+from src.document_loader import load_all_documents, print_intake_report
 
 load_dotenv()
 
 
-def load_documents(data_dir: str = "data") -> list[dict]:
-    """
-    Scan data/ for supported document files and return a list of raw document records.
-    Each record carries the file path and basic file-level metadata.
-
-    Supported formats (extend as needed): .txt, .pdf, .docx
-    """
-    supported_extensions = {".txt", ".pdf", ".docx"}
-    documents = []
-
-    for filename in os.listdir(data_dir):
-        ext = os.path.splitext(filename)[1].lower()
-        if ext in supported_extensions:
-            documents.append(
-                {
-                    "filename": filename,
-                    "filepath": os.path.join(data_dir, filename),
-                    "extension": ext,
-                }
-            )
-
-    print(f"[ingest] Found {len(documents)} document(s) in '{data_dir}'")
-    return documents
-
-
-def extract_text(document: dict) -> str:
-    """
-    Extract raw text from a document record.
-    Currently handles plain .txt files.
-    Extend this function to support PDF and DOCX as needed.
-    """
-    filepath = document["filepath"]
-    ext = document["extension"]
-
-    if ext == ".txt":
-        with open(filepath, "r", encoding="utf-8") as f:
-            return f.read()
-
-    # Placeholder for future parsers
-    print(f"[ingest] Skipping unsupported format: {filepath}")
-    return ""
-
+# ---------------------------------------------------------------------------
+# Chunking
+# ---------------------------------------------------------------------------
 
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
     """
-    Split text into overlapping chunks of approximately chunk_size characters.
-    Overlap ensures context is not lost at chunk boundaries.
+    Split text into overlapping character-level chunks.
+
+    Overlap ensures context is not lost at chunk boundaries —
+    a sentence that straddles a boundary appears in both adjacent chunks,
+    so retrieval can surface it from either side.
+
+    Args:
+        text       : Plain text to chunk.
+        chunk_size : Target chunk length in characters.
+        overlap    : Number of characters shared between adjacent chunks.
+
+    Returns:
+        List of text chunk strings.
     """
+    if not text.strip():
+        return []
+
     chunks = []
-    start = 0
+    start  = 0
 
     while start < len(text):
         end = start + chunk_size
@@ -71,58 +54,128 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
     return chunks
 
 
+# ---------------------------------------------------------------------------
+# Metadata
+# ---------------------------------------------------------------------------
+
 def build_metadata(document: dict, chunk_index: int) -> dict:
     """
-    Attach document-level metadata to each chunk.
-    These fields are used downstream for metadata filtering —
-    ensuring only current, approved documents surface in answers.
+    Build the metadata dict for a single chunk.
 
-    Fields align with the WealthConnect Document Metadata Schema.
+    These fields are stored alongside the embedding in ChromaDB and used
+    for metadata filtering at retrieval time — ensuring only current,
+    approved documents are ever surfaced in answers (FR-04).
+
+    Fields align with the WealthConnect Document Metadata Schema defined
+    in the README. Version, approval status, and effective date are set
+    during admin document upload; defaults here keep the pipeline runnable
+    before admin tooling is built.
+
+    Args:
+        document    : Loaded document record from document_loader.
+        chunk_index : Zero-based index of this chunk within its document.
+
+    Returns:
+        Metadata dict for ChromaDB upsert.
     """
     return {
-        "document_name": document["filename"],
-        "document_type": "unknown",       # Set during admin upload
-        "version": "unknown",             # Set during admin upload
-        "approval_status": "approved",    # Only approved docs should be in data/
-        "effective_date": "unknown",      # Set during admin upload
-        "expiry_review_date": "unknown",  # Set during admin upload
-        "product": "unknown",             # Set during admin upload
-        "owner": "unknown",               # Set during admin upload
-        "last_updated": "unknown",        # Set during admin upload
-        "chunk_index": chunk_index,
+        "document_name"   : document["source"],
+        "document_type"   : _infer_doc_type(document["source"]),
+        "version"         : "unknown",      # Set during admin upload
+        "approval_status" : "approved",     # Only approved docs live in data/
+        "effective_date"  : "unknown",      # Set during admin upload
+        "expiry_review_date": "unknown",    # Set during admin upload
+        "product"         : "unknown",      # Set during admin upload
+        "owner"           : "unknown",      # Set during admin upload
+        "last_updated"    : "unknown",      # Set during admin upload
+        "source_format"   : document["extension"],
+        "char_count"      : document["char_count"],
+        "chunk_index"     : chunk_index,
     }
 
 
-def run_ingestion(data_dir: str = "data") -> list[dict]:
+def _infer_doc_type(filename: str) -> str:
+    """
+    Infer a rough document type from the filename for metadata tagging.
+    Proper categorisation is set during admin upload; this is a best-effort
+    fallback so the pipeline can run before admin tooling exists.
+    """
+    name = filename.lower()
+    if "policy"      in name: return "investment_policy"
+    if "tax"         in name: return "tax_rules"
+    if "brochure"    in name: return "product_brochure"
+    if "eligibility" in name: return "eligibility_guidelines"
+    if "risk"        in name: return "risk_document"
+    if "compliance"  in name: return "compliance_guidelines"
+    return "unknown"
+
+
+# ---------------------------------------------------------------------------
+# Full ingestion pipeline
+# ---------------------------------------------------------------------------
+
+def run_ingestion(data_dir: str = "data", verbose: bool = True) -> list[dict]:
     """
     Full ingestion pipeline:
-      1. Load documents from data/
-      2. Extract text
-      3. Chunk text
-      4. Attach metadata
-    Returns a list of chunk records ready for embedding.
-    """
-    documents = load_documents(data_dir)
-    all_chunks = []
+      1. Load all supported documents from data/ (multi-format via document_loader)
+      2. Print intake report showing loaded/skipped/empty counts
+      3. Chunk each document's text
+      4. Attach metadata to every chunk
+      5. Return chunk records ready for embedding
 
-    for doc in documents:
-        text = extract_text(doc)
-        if not text.strip():
+    Args:
+        data_dir : Directory containing approved wealth-management documents.
+        verbose  : If True, print per-document and summary output.
+
+    Returns:
+        List of chunk dicts:
+            { "text": str, "metadata": dict }
+    """
+    # Step 1 — Multi-format document intake
+    loaded, skipped = load_all_documents(data_dir)
+
+    # Step 2 — Intake report
+    if verbose:
+        print_intake_report(loaded, skipped)
+
+    # Step 3 — Chunk and tag
+    all_chunks: list[dict] = []
+
+    for doc in loaded:
+        if not doc["text"].strip():
+            # Empty after loading — scanned PDF or extraction failure
+            if verbose:
+                print(f"[ingest] Skipping empty document: {doc['source']}")
             continue
 
-        chunks = chunk_text(text)
-        for i, chunk in enumerate(chunks):
-            all_chunks.append(
-                {
-                    "text": chunk,
-                    "metadata": build_metadata(doc, chunk_index=i),
-                }
-            )
+        chunks = chunk_text(doc["text"])
 
-    print(f"[ingest] Total chunks produced: {len(all_chunks)}")
+        for i, chunk in enumerate(chunks):
+            all_chunks.append({
+                "text"    : chunk,
+                "metadata": build_metadata(doc, chunk_index=i),
+            })
+
+    if verbose:
+        print(f"[ingest] Total chunks produced: {len(all_chunks)}")
+
     return all_chunks
 
 
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
     chunks = run_ingestion()
-    print(f"[ingest] Ingestion complete. {len(chunks)} chunks ready for embedding.")
+    print(f"\n[ingest] Ingestion complete — {len(chunks)} chunk(s) ready for embedding.")
+
+    # Inspect first chunk as a sanity check
+    if chunks:
+        first = chunks[0]
+        print(f"\nFirst chunk preview:")
+        print(f"  source  : {first['metadata']['document_name']}")
+        print(f"  format  : {first['metadata']['source_format']}")
+        print(f"  doc_type: {first['metadata']['document_type']}")
+        print(f"  chunk   : {first['metadata']['chunk_index']}")
+        print(f"  text    : {repr(first['text'][:120])}")

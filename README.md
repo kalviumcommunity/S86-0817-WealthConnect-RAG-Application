@@ -56,11 +56,14 @@ S86-0817-WealthConnect-RAG-Application/
 ├── data/                        # Approved wealth documents (git-ignored — sensitive)
 ├── src/                         # Application source code
 │   ├── __init__.py
-│   ├── ingest.py                # Document loading, chunking, metadata tagging
+│   ├── document_loader.py       # Multi-format intake: .txt .md .pdf .html
+│   ├── ingest.py                # Chunking, metadata tagging, full pipeline
 │   ├── embeddings.py            # OpenAI embeddings + ChromaDB vector store
 │   ├── retrieval.py             # Semantic search + source formatting
 │   ├── prompt_builder.py        # System/user role construction, prompt variants
 │   ├── prompt_experiments.py    # GY3.13 prompt comparison & demonstration runner
+│   ├── model_params.py          # Parameter presets: temperature, max_tokens, etc.
+│   ├── parameter_experiments.py # GY3.16 parameter comparison runner
 │   └── app.py                   # Main RAG pipeline + LLM answer generation
 ├── prompts/                     # Prompt templates (editable without touching code)
 │   ├── system_prompt_strict.txt   # Full rules, prose output, source citation
@@ -146,6 +149,51 @@ Runs five experiments:
 3. **Stop sequences** — with and without `\n\n` stop string
 4. **top_p vs temperature** — two routes to focused output; why not to tune both
 5. **Production preset comparison** — all named presets on the same wealth question
+
+---
+
+## Document Loading (GY3.19)
+
+WealthConnect's approved document corpus arrives in multiple formats. `document_loader.py` converts all of them into a single common form — plain text — before chunking and embedding.
+
+### Supported Formats
+
+| Format | Loader | Notes |
+|--------|--------|-------|
+| `.txt` | `path.read_text()` | Plain-text policy extracts, notes |
+| `.md` | `path.read_text()` | Markdown guidelines, tax rules |
+| `.pdf` | `pypdf.PdfReader` | Product brochures, investment policies (primary format) |
+| `.html` / `.htm` | `BeautifulSoup.get_text()` | Web-exported compliance pages, product pages |
+
+### PDF handling
+PDFs are the hard case — product brochures may have multi-column layouts, and some legacy documents may be scanned images with no extractable text. The loader warns on empty-text PDFs so the admin team can re-upload a text-selectable version.
+
+### Failure handling
+One corrupt file never stops the rest of the corpus. Every file is loaded inside a `try/except` — failures are logged to a skipped list and reported at the end. The intake report shows loaded count, skipped count, empty documents, and total characters loaded.
+
+### Running document intake
+
+```bash
+# Install new dependencies first
+pip install -r requirements.txt
+
+# Run intake against data/
+python -m src.document_loader
+
+# Run the full ingest pipeline (intake → chunk → metadata)
+python -m src.ingest
+```
+
+### Sample Documents
+
+Four sample documents are included in `data/` covering all supported formats:
+
+| File | Format | Type |
+|------|--------|------|
+| `sample_investment_policy.txt` | `.txt` | Investment policy |
+| `sample_tax_rules.md` | `.md` | Tax rules |
+| `sample_product_brochure.html` | `.html` | Product brochure |
+| `sample_eligibility_guidelines.txt` | `.txt` | Eligibility guidelines |
 
 ---
 
