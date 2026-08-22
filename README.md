@@ -113,6 +113,42 @@ Runs four experiments:
 
 ---
 
+## Model Parameters (GY3.16)
+
+WealthConnect uses named parameter presets to control LLM output determinism, length, and cost.
+
+| Parameter | Role |
+|-----------|------|
+| `temperature` | Randomness (0.0 = deterministic/factual, 2.0 = very creative). RAG uses 0.0. |
+| `max_tokens` | Hard cap on output length. Output tokens are billed — caps cost directly. |
+| `top_p` | Nucleus sampling — alternative to temperature. Tune one, not both. |
+| `stop` | Sequence(s) that end generation early, e.g. `["\n\n"]` to cut at first paragraph. |
+
+### Named Presets
+
+| Preset | temperature | max_tokens | top_p | stop | Use |
+|--------|------------|-----------|-------|------|-----|
+| `rag_grounded` | 0.0 | 400 | 1.0 | none | **Production default** — grounded prose |
+| `rag_strict` | 0.0 | 200 | 1.0 | `\n\n` | One paragraph, cut early |
+| `rag_json` | 0.0 | 500 | 1.0 | none | JSON output variant |
+| `high_temperature` | 1.0 | 400 | 1.0 | none | Demo only — shows drift |
+| `low_top_p` | 1.0 | 400 | 0.1 | none | Tight nucleus sampling demo |
+
+### Running the Parameter Experiments
+
+```bash
+python -m src.parameter_experiments
+```
+
+Runs five experiments:
+1. **Temperature 0.0 vs 1.0** — same prompt twice at each setting; stable vs drifting
+2. **max_tokens cap** — 50 / 150 / 400 tokens; shows `finish_reason` flipping to `length`
+3. **Stop sequences** — with and without `\n\n` stop string
+4. **top_p vs temperature** — two routes to focused output; why not to tune both
+5. **Production preset comparison** — all named presets on the same wealth question
+
+---
+
 ## Overview
 
 WealthConnect is an AI-powered knowledge assistant built for a retail bank's wealth division. It enables **Relationship Managers** to ask natural-language questions and receive accurate, source-grounded answers drawn exclusively from the bank's current approved wealth-management documents — investment policies, product brochures, tax rules, eligibility guidelines, and more.
