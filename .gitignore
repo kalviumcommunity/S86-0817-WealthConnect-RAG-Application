@@ -1,0 +1,43 @@
+# -------------------------------------------------------
+# WealthConnect .gitignore
+# -------------------------------------------------------
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Secrets — NEVER commit
+.env
+
+# Raw wealth documents (sensitive bank material)
+data/
+!data/.gitkeep
+
+# Generated outputs and vector store
+outputs/
+!outputs/.gitkeep
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# IDE and OS files
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Logs
+*.log
