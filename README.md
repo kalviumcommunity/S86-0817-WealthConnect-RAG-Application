@@ -4,6 +4,75 @@
 
 ---
 
+## Quick Start
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/kalviumcommunity/S86-0817-WealthConnect-RAG-Application.git
+cd S86-0817-WealthConnect-RAG-Application
+```
+
+### 2. Create and activate a virtual environment
+```bash
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS / Linux
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+```bash
+cp .env.example .env
+# Open .env and fill in your API keys — never commit this file
+```
+
+### 5. Add approved wealth documents
+Place your approved documents (`.txt`, `.pdf`, `.docx`) in the `data/` folder.
+
+### 6. Ingest documents into the vector store
+```bash
+python -m src.ingest
+```
+
+### 7. Run the assistant
+```bash
+python -m src.app
+```
+
+---
+
+## Project Structure
+
+```
+S86-0817-WealthConnect-RAG-Application/
+├── data/               # Approved wealth documents (git-ignored — sensitive)
+├── src/                # Application source code
+│   ├── __init__.py
+│   ├── ingest.py       # Document loading, chunking, metadata tagging
+│   ├── embeddings.py   # OpenAI embeddings + ChromaDB vector store
+│   ├── retrieval.py    # Semantic search + source formatting
+│   └── app.py          # Main RAG pipeline + LLM answer generation
+├── prompts/            # Prompt templates (editable without touching code)
+│   ├── rag_system_prompt.txt
+│   └── fallback_message.txt
+├── outputs/            # Generated answers, logs, evaluation results (git-ignored)
+├── .env                # Real secrets — NEVER committed
+├── .env.example        # Template showing required keys — committed, no values
+├── .gitignore
+├── requirements.txt    # Pinned dependency versions
+└── README.md
+```
+
+---
+
 ## Overview
 
 WealthConnect is an AI-powered knowledge assistant built for a retail bank's wealth division. It enables **Relationship Managers** to ask natural-language questions and receive accurate, source-grounded answers drawn exclusively from the bank's current approved wealth-management documents — investment policies, product brochures, tax rules, eligibility guidelines, and more.
