@@ -1,0 +1,53 @@
+--- Document Chunking Strategies Comparison ---
+
+=== Strategy 1: Fixed-Size Character Chunking (Size: 150, Overlap: 30) ===
+Stats - Count: 6, Average Size: 142.67 chars
+
+Chunk 1:
+[WealthConnect Q4 Portfolio Analysis and Earnings Overview.
+
+In the final quarter of the year, our core aggressive growth fund yielded a 12% return, he]
+
+Chunk 2:
+[ fund yielded a 12% return, heavily driven by strategic investments in the AI and renewable energy sectors. This offset the minor losses experienced i]
+
+Chunk 3:
+[the minor losses experienced in the traditional real estate trust portfolio.
+
+Customer acquisition costs dropped by $15 per head following the rollout]
+
+Chunk 4:
+[per head following the rollout of our new Retrieval-Augmented Generation automated support assistant. The assistant currently resolves 65% of Tier 1 q]
+
+Chunk 5:
+[ently resolves 65% of Tier 1 queries without human intervention.
+
+Looking ahead to next year, we project a stabilization of interest rates. Consequent]
+
+Chunk 6:
+[ of interest rates. Consequently, we recommend clients rebalance to hold at least 30% in high-yield bonds.]
+
+
+==================================================
+
+=== Strategy 2: Paragraph Chunking ===
+Stats - Count: 4, Average Size: 175.0 chars
+
+Chunk 1:
+[WealthConnect Q4 Portfolio Analysis and Earnings Overview.]
+
+Chunk 2:
+[In the final quarter of the year, our core aggressive growth fund yielded a 12% return, heavily driven by strategic investments in the AI and renewable energy sectors. This offset the minor losses experienced in the traditional real estate trust portfolio.]
+
+Chunk 3:
+[Customer acquisition costs dropped by $15 per head following the rollout of our new Retrieval-Augmented Generation automated support assistant. The assistant currently resolves 65% of Tier 1 queries without human intervention.]
+
+Chunk 4:
+[Looking ahead to next year, we project a stabilization of interest rates. Consequently, we recommend clients rebalance to hold at least 30% in high-yield bonds.]
+
+
+==================================================
+
+=== Task 4: Justification ===
+For this financial RAG application (WealthConnect), **Strategy 2 (Paragraph Chunking)** is the chosen strategy.
+Reasoning: Financial documents (like earnings reports and account summaries) are highly structured by topic per paragraph. Using fixed-size chunking blindly slices through sentences and numbers (e.g., cutting '$10,000' in half), destroying the factual integrity needed for accurate retrieval. Paragraph chunking respects the natural semantic boundaries, ensuring that concepts remain whole and contextually complete when fed to the LLM.
