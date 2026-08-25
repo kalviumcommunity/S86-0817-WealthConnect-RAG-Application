@@ -1,0 +1,10 @@
+2026-08-25 10:30:07,372 [INFO] Sending request to http://localhost:8080 for model gpt-4o-mini
+2026-08-25 10:30:07,373 [INFO] Request messages: [{'role': 'system', 'content': 'You are a helpful RAG assistant.'}, {'role': 'user', 'content': 'Hello! What is your purpose?'}]
+2026-08-25 10:30:10,824 [INFO] HTTP Request: POST http://localhost:8080/chat/completions "HTTP/1.0 200 OK"
+2026-08-25 10:30:10,845 [INFO] Successfully received response.
+2026-08-25 10:30:10,845 [INFO] Response Content: I am a helpful RAG assistant designed to answer questions based on retrieved context.
+2026-08-25 10:30:10,845 [INFO] Token Usage - Prompt: 18, Completion: 15, Total: 33
+
+--- Model Reply ---
+I am a helpful RAG assistant designed to answer questions based on retrieved context.
+-------------------
