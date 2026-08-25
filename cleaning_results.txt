@@ -1,0 +1,18 @@
+--- RAG Document Cleaning Pipeline ---
+
+=== Document 1 ===
+[BEFORE - Raw Extracted Text]
+'COMPANY Q3 EARNINGS REPORT         \n\n\n\nPage 1 of 45\n\nWe are pleased to announce Ⓐ 15% growth in Q3.   The revenue was strong. \nCONFIDENTIAL DOCUMENT\nBack to top\n'
+
+[AFTER - Cleaned & Ready for Retrieval]
+'COMPANY Q3 EARNINGS REPORT \n\nWe are pleased to announce A 15% growth in Q3. The revenue was strong.'
+========================================
+
+=== Document 2 ===
+[BEFORE - Raw Extracted Text]
+'\n\n\n- Page 2 -\n\nThe market  has  been very volatile,  but our RAG system   \nhas stabilized support costs. \nPage 2 of 45\n\nClick here for more info'
+
+[AFTER - Cleaned & Ready for Retrieval]
+'The market has been very volatile, but our RAG system \nhas stabilized support costs.'
+========================================
+
