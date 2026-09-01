@@ -1,0 +1,53 @@
+============================================================
+TAGGED CHUNKS — Full Corpus
+============================================================
+
+[TEXT]     WealthConnect Q4 Portfolio Analysis and Earnings Overview.
+[METADATA] {'source': 'q4_earnings_report.pdf', 'chunk_index': 0, 'char_start': 0, 'char_end': 58, 'doc_type': 'pdf', 'page_number': 2}
+
+[TEXT]     In the final quarter of the year, our core aggressive growth fund yielded a 12% ...
+[METADATA] {'source': 'q4_earnings_report.pdf', 'chunk_index': 1, 'char_start': 58, 'char_end': 225, 'doc_type': 'pdf', 'page_number': 2}
+
+[TEXT]     Customer acquisition costs dropped by $15 per head following the rollout of our ...
+[METADATA] {'source': 'q4_earnings_report.pdf', 'chunk_index': 2, 'char_start': 225, 'char_end': 368, 'doc_type': 'pdf', 'page_number': 2}
+
+[TEXT]     Looking ahead to next year, we project a stabilization of interest rates. We rec...
+[METADATA] {'source': 'q4_earnings_report.pdf', 'chunk_index': 3, 'char_start': 368, 'char_end': 514, 'doc_type': 'pdf', 'page_number': 2}
+
+[TEXT]     ## Refund Policy
+All refund requests must be submitted within 30 days of purchas...
+[METADATA] {'source': 'policies.md', 'chunk_index': 0, 'char_start': 0, 'char_end': 82, 'doc_type': 'markdown', 'section_heading': 'Refund Policy'}
+
+[TEXT]     ## Contact Support
+Reach our support team at support@wealthconnect.io.
+[METADATA] {'source': 'policies.md', 'chunk_index': 1, 'char_start': 82, 'char_end': 152, 'doc_type': 'markdown', 'section_heading': 'Refund Policy'}
+
+[TEXT]     WealthConnect helps you grow wealth through smart, AI-powered investment insight...
+[METADATA] {'source': 'https://wealthconnect.io/about', 'chunk_index': 0, 'char_start': 0, 'char_end': 82, 'doc_type': 'html', 'page_title': 'About WealthConnect'}
+
+[TEXT]     Our RAG assistant answers your financial questions with cited, up-to-date source...
+[METADATA] {'source': 'https://wealthconnect.io/about', 'chunk_index': 1, 'char_start': 82, 'char_end': 164, 'doc_type': 'html', 'page_title': 'About WealthConnect'}
+
+============================================================
+SIMULATED RETRIEVAL  —  Query: 'What was the Q4 portfolio return?'
+============================================================
+
+Retrieved chunk text:
+  In the final quarter of the year, our core aggressive growth fund yielded a 12% return, heavily driven by strategic investments in the AI and renewable energy sectors.
+
+Citation:
+  q4_earnings_report.pdf, chunk 1 (chars 58–225), page 2
+
+Answer: According to [q4_earnings_report.pdf, chunk 1 (chars 58–225), page 2], the Q4 portfolio return was 12%.
+
+============================================================
+SOURCE TRACEABILITY — All citations in corpus
+============================================================
+  q4_earnings_report.pdf, chunk 0 (chars 0–58), page 2
+  q4_earnings_report.pdf, chunk 1 (chars 58–225), page 2
+  q4_earnings_report.pdf, chunk 2 (chars 225–368), page 2
+  q4_earnings_report.pdf, chunk 3 (chars 368–514), page 2
+  policies.md, chunk 0 (chars 0–82) — Section: Refund Policy
+  policies.md, chunk 1 (chars 82–152) — Section: Refund Policy
+  https://wealthconnect.io/about, chunk 0 (chars 0–82) — Page title: About WealthConnect
+  https://wealthconnect.io/about, chunk 1 (chars 82–164) — Page title: About WealthConnect
