@@ -1,0 +1,104 @@
+=================================================================
+GY3.41 — Hallucination Guardrails & Refusal Handling
+=================================================================
+
+Relevance threshold   : 0.06
+Min supporting chunks : 1
+Retrieval k           : 5
+Corpus size           : 13 chunks
+
+=================================================================
+TEST CASES
+=================================================================
+
+Test 1: [PASS]  Strong retrieval — policies.md has explicit password reset content.
+  Question        : How can I reset my WealthConnect password?
+  Expected        : answered
+  Status          : answered
+  Top score       : 0.134645  (threshold: 0.06)
+  Strong chunks   : 3 / 5
+  Topic check     : topic match via: {'password', 'reset', 'wealthconnect'}
+  Reason          : sufficient_evidence
+  Answer (preview): Based on the available context: Two-factor authentication is mandatory for all premium account holders. (Sourc...
+  Source markers  : [1] policies.md#2, [2] policies.md#0, [3] policies.md#1
+
+Test 2: [PASS]  Strong retrieval — earnings report has Q4 performance data.
+  Question        : What was the Q4 portfolio return?
+  Expected        : answered
+  Status          : answered
+  Top score       : 0.101371  (threshold: 0.06)
+  Strong chunks   : 4 / 5
+  Topic check     : topic match via: {'return', 'q4'}
+  Reason          : sufficient_evidence
+  Answer (preview): Based on the available context: We project interest rate stabilisation next year and recommend rebalancing to ...
+  Source markers  : [1] q4_earnings_report.pdf#2, [2] q4_earnings_report.pdf#1, [3] q4_earnings_report.pdf#4
+
+Test 3: [PASS]  Strong retrieval — refund policy clearly in corpus.
+  Question        : What is the refund policy?
+  Expected        : answered
+  Status          : answered
+  Top score       : 0.081147  (threshold: 0.06)
+  Strong chunks   : 2 / 5
+  Topic check     : topic match via: {'refund'}
+  Reason          : sufficient_evidence
+  Answer (preview): Based on the available context: Refunds are processed within 5–7 business days after approval. (Source: polici...
+  Source markers  : [1] policies.md#4, [2] policies.md#3, [3] q4_earnings_report.pdf#3
+
+Test 4: [PASS]  Off-corpus geography question — no supporting evidence.
+  Question        : What is the capital of France?
+  Expected        : refused
+  Status          : refused_off_topic
+  Top score       : 0.070948  (threshold: 0.06)
+  Strong chunks   : 1 / 5
+  Topic check     : no vocabulary overlap between query and top-3 chunks
+  Reason          : sufficient_evidence
+  Refusal message : I don't have enough reliable context in my knowledge base to answer that question. Please rephrase your question or contact a WealthConnect advisor directly.
+
+Test 5: [PASS]  Completely unrelated — should be refused to prevent hallucination.
+  Question        : How do black holes form?
+  Expected        : refused
+  Status          : refused_off_topic
+  Top score       : 0.071809  (threshold: 0.06)
+  Strong chunks   : 2 / 5
+  Topic check     : no vocabulary overlap between query and top-3 chunks
+  Reason          : sufficient_evidence
+  Refusal message : I don't have enough reliable context in my knowledge base to answer that question. Please rephrase your question or contact a WealthConnect advisor directly.
+
+Test 6: [PASS]  Out-of-domain request — should be refused.
+  Question        : Recommend a good recipe for chocolate cake.
+  Expected        : refused
+  Status          : refused_weak_context
+  Top score       : 0.041516  (threshold: 0.06)
+  Strong chunks   : 0 / 5
+  Topic check     : n/a
+  Reason          : only 0 chunk(s) above threshold 0.06 (need 1)
+  Refusal message : I don't have enough reliable context in my knowledge base to answer that question. Please rephrase your question or contact a WealthConnect advisor directly.
+
+=================================================================
+SUMMARY
+=================================================================
+  Tests run : 6
+  Passed    : 6
+  Failed    : 0
+  Pass rate : 100.0%
+
+=================================================================
+THRESHOLD SENSITIVITY DEMO
+=================================================================
+
+Same question run at three threshold levels to show the refusing-too-often vs answering-too-freely trade-off:
+
+  threshold=0.02  →  status=answered                   top_score=0.101371
+  threshold=0.06  →  status=answered                   top_score=0.101371
+  threshold=0.99  →  status=refused_weak_context       top_score=0.101371
+LOW threshold (0.02)  : Almost never refuses — risks hallucination on weak context.
+  MID threshold (0.06)  : Balanced — refuses when evidence is genuinely absent.
+  HIGH threshold (0.99) : Refuses almost everything — too conservative for production.
+
+  Tune the threshold using your retrieval evaluation results (GY3.29),
+  not guesswork. In high-stakes domains (finance, health, legal), err toward
+  refusing: a confident wrong answer causes more harm than an honest "I don't know."
+
+=================================================================
+Hallucination guardrails demo complete.
+=================================================================
