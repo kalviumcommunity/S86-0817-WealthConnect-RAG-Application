@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WealthConnect RAG Assistant</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1c1e26;
+      --border:    #2e3042;
+      --accent:    #4f8ef7;
+      --accent-dim:#2a4a8a;
+      --text:      #e2e4ed;
+      --muted:     #8b8fa8;
+      --success:   #3ecf8e;
+      --warning:   #f6c94e;
+      --danger:    #f05c5c;
+      --radius:    10px;
+      --mono:      'Menlo', 'Consolas', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+    }
+
+    /* ── Layout ── */
+    .container { width: 100%; max-width: 760px; }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+    header p { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
+
+    /* ── Input area ── */
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .input-row input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-row input:focus { border-color: var(--accent); }
+    .input-row input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 22px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { background: #3a7ae0; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-retry {
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      margin-top: 12px;
+    }
+    .btn-retry:hover:not(:disabled) { background: rgba(240,92,92,0.1); }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+      min-height: 20px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .dot.streaming { background: var(--success); animation: pulse 1s infinite; }
+    .dot.error     { background: var(--danger); }
+    .dot.done      { background: var(--success); animation: none; }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.3; }
+    }
+
+    /* ── Answer card ── */
+    .answer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      min-height: 60px;
+      position: relative;
+    }
+    .answer-card .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .answer-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.75;
+    }
+    .cursor {
+      display: inline-block;
+      width: 2px; height: 1em;
+      background: var(--accent);
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── Incomplete badge ── */
+    .incomplete-badge {
+      display: inline-block;
+      background: rgba(246,201,78,0.15);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      margin-top: 10px;
+    }
+
+    /* ── Error box ── */
+    .error-box {
+      background: rgba(240,92,92,0.08);
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      color: var(--danger);
+      margin-bottom: 20px;
+    }
+    .error-box p { margin-bottom: 8px; }
+
+    /* ── Citations ── */
+    .citations-section { margin-bottom: 20px; }
+    .citations-section h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    summary {
+      cursor: pointer;
+      padding: 12px 16px;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      list-style: none;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    summary:hover { background: rgba(79,142,247,0.06); }
+    summary::-webkit-details-marker { display: none; }
+
+    .citation-label {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 1px 7px;
+      flex-shrink: 0;
+      font-family: var(--mono);
+    }
+    .citation-meta {
+      flex: 1;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .citation-meta .doc { font-weight: 600; }
+    .citation-meta .chunk-id { color: var(--muted); font-size: 0.78rem; font-family: var(--mono); }
+    .citation-score {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      flex-shrink: 0;
+    }
+
+    .citation-body {
+      padding: 0 16px 14px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .citation-body p { padding-top: 12px; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 48px 0;
+      font-size: 0.9rem;
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+    /* ── Suggestions ── */
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .suggestion-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 7px 14px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .suggestion-btn:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>WealthConnect RAG Assistant</h1>
+    <p>Ask questions about policies, portfolio performance, and platform features.</p>
+  </header>
+
+  <!-- Input -->
+  <div class="input-row">
+    <input
+      id="questionInput"
+      type="text"
+      placeholder="e.g. What was the Q4 portfolio return?"
+      aria-label="Question"
+      autocomplete="off"
+    />
+    <button class="btn" id="askBtn" onclick="handleAsk()">Ask</button>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar" id="statusBar" aria-live="polite">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText"></span>
+  </div>
+
+  <!-- Main output area -->
+  <main id="mainOutput">
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="icon">💬</div>
+      <p>Ask a question to get a grounded answer with source citations.</p>
+      <div class="suggestions">
+        <button class="suggestion-btn" onclick="prefill('What was the Q4 portfolio return?')">Q4 portfolio return?</button>
+        <button class="suggestion-btn" onclick="prefill('How do I reset my password?')">How to reset password?</button>
+        <button class="suggestion-btn" onclick="prefill('What is the refund policy?')">Refund policy?</button>
+        <button class="suggestion-btn" onclick="prefill('What is WealthConnect?')">What is WealthConnect?</button>
+      </div>
+    </div>
+
+    <!-- Error box (hidden until error) -->
+    <div class="error-box" id="errorBox" hidden>
+      <p id="errorMsg"></p>
+      <button class="btn btn-retry" id="retryBtn" onclick="handleRetry()">Retry</button>
+    </div>
+
+    <!-- Answer card (hidden until first token) -->
+    <div class="answer-card" id="answerCard" hidden>
+      <div class="label">Answer</div>
+      <div class="answer-text" id="answerText" aria-live="polite"></div>
+      <div id="incompleteBadge" hidden>
+        <span class="incomplete-badge">⚠ Stream interrupted — answer may be incomplete</span>
+      </div>
+    </div>
+
+    <!-- Citations (hidden until sources arrive) -->
+    <section class="citations-section" id="citationsSection" aria-label="Sources" hidden>
+      <h2>Sources</h2>
+      <div id="citationList"></div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────────────────────
+  const API_URL = "http://localhost:8000";
+
+  // ── State ───────────────────────────────────────────────────────────────
+  let isStreaming  = false;
+  let lastQuestion = "";
+  let partialAnswer = "";
+  let hadCitations  = false;
+  let streamInterrupted = false;
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────
+  const questionInput   = document.getElementById("questionInput");
+  const askBtn          = document.getElementById("askBtn");
+  const statusBar       = document.getElementById("statusBar");
+  const statusDot       = document.getElementById("statusDot");
+  const statusText      = document.getElementById("statusText");
+  const emptyState      = document.getElementById("emptyState");
+  const errorBox        = document.getElementById("errorBox");
+  const errorMsg        = document.getElementById("errorMsg");
+  const answerCard      = document.getElementById("answerCard");
+  const answerText      = document.getElementById("answerText");
+  const incompleteBadge = document.getElementById("incompleteBadge");
+  const citationsSection= document.getElementById("citationsSection");
+  const citationList    = document.getElementById("citationList");
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  function setStatus(label, state) {
+    statusDot.className = "dot " + (state || "");
+    statusText.textContent = label;
+  }
+
+  function setStreaming(val) {
+    isStreaming = val;
+    askBtn.disabled = val;
+    questionInput.disabled = val;
+  }
+
+  function prefill(q) {
+    questionInput.value = q;
+    questionInput.focus();
+  }
+
+  function resetOutput() {
+    partialAnswer = "";
+    hadCitations  = false;
+    streamInterrupted = false;
+
+    emptyState.hidden        = true;
+    errorBox.hidden          = true;
+    answerCard.hidden        = true;
+    citationsSection.hidden  = true;
+    incompleteBadge.hidden   = true;
+
+    answerText.innerHTML     = "";
+    citationList.innerHTML   = "";
+  }
+
+  // ── Citation rendering ────────────────────────────────────────────────────
+  function renderCitations(sources) {
+    if (!sources || sources.length === 0) return;
+
+    hadCitations = true;
+    citationList.innerHTML = "";
+
+    sources.forEach((src) => {
+      const details = document.createElement("details");
+
+      const summary = document.createElement("summary");
+      summary.innerHTML = `
+        <span class="citation-label">${escHtml(src.label)}</span>
+        <span class="citation-meta">
+          <span class="doc">${escHtml(src.document)}</span>
+          ${src.section ? ` — <span>${escHtml(src.section)}</span>` : ""}
+          <br/>
+          <span class="chunk-id">${escHtml(src.chunk_id)}</span>
+        </span>
+        <span class="citation-score">score: ${typeof src.score === "number" ? src.score.toFixed(4) : "—"}</span>
+      `;
+      details.appendChild(summary);
+
+      const body = document.createElement("div");
+      body.className = "citation-body";
+      body.innerHTML = `<p>${escHtml(src.text)}</p>`;
+      details.appendChild(body);
+
+      citationList.appendChild(details);
+    });
+
+    citationsSection.hidden = false;
+  }
+
+  function escHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;");
+  }
+
+  // ── Main stream handler ───────────────────────────────────────────────────
+  async function streamAnswer(question) {
+    resetOutput();
+    setStreaming(true);
+    setStatus("Retrieving context…", "streaming");
+
+    let cursorEl = document.createElement("span");
+    cursorEl.className = "cursor";
+    cursorEl.setAttribute("aria-hidden", "true");
+
+    try {
+      const response = await fetch(`${API_URL}/query/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const reader  = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+
+        for (const line of chunk.split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+
+          let event;
+          try { event = JSON.parse(line.slice(6)); }
+          catch { continue; }
+
+          // ── citations ──
+          if (event.type === "citations") {
+            renderCitations(event.sources);
+            setStatus("Generating answer…", "streaming");
+          }
+
+          // ── token ──
+          if (event.type === "token") {
+            partialAnswer += event.text;
+
+            if (answerCard.hidden) {
+              answerCard.hidden = false;
+              answerText.appendChild(cursorEl);
+            }
+
+            // Insert text node before cursor
+            answerText.insertBefore(
+              document.createTextNode(event.text),
+              cursorEl
+            );
+          }
+
+          // ── done ──
+          if (event.type === "done") {
+            cursorEl.remove();
+            setStatus("Done", "done");
+          }
+
+          // ── error mid-stream ──
+          if (event.type === "error") {
+            streamInterrupted = true;
+            cursorEl.remove();
+            if (partialAnswer) {
+              incompleteBadge.hidden = false;
+            } else {
+              showError(event.message, true);
+            }
+            setStatus("Stream interrupted", "error");
+          }
+        }
+      }
+
+    } catch (err) {
+      streamInterrupted = true;
+      cursorEl.remove();
+
+      if (partialAnswer) {
+        // Keep partial content, just flag it as incomplete
+        incompleteBadge.hidden = false;
+        setStatus("Stream interrupted — partial answer shown", "error");
+      } else {
+        showError("Could not reach the RAG service. Is the server running?", true);
+        setStatus("Connection failed", "error");
+      }
+    } finally {
+      setStreaming(false);
+      questionInput.focus();
+    }
+  }
+
+  // ── Error display ─────────────────────────────────────────────────────────
+  function showError(message, showRetry) {
+    errorMsg.textContent = message;
+    document.getElementById("retryBtn").hidden = !showRetry;
+    errorBox.hidden = false;
+  }
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  function handleAsk() {
+    const q = questionInput.value.trim();
+    if (!q || q.length < 3) {
+      questionInput.focus();
+      return;
+    }
+    lastQuestion = q;
+    streamAnswer(q);
+  }
+
+  function handleRetry() {
+    if (lastQuestion) streamAnswer(lastQuestion);
+  }
+
+  // Enter key submits
+  questionInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !isStreaming) handleAsk();
+  });
+</script>
+</body>
+</html>
