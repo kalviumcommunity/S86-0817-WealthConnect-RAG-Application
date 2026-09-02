@@ -1,0 +1,109 @@
+==============================================================
+GY3.44 — Backend API for the RAG Service — Sample Output
+==============================================================
+
+Start server:
+    uvicorn rag_api:app --reload --port 8000
+
+Interactive docs: http://localhost:8000/docs
+
+--------------------------------------------------------------
+GET /health
+--------------------------------------------------------------
+{
+  "status": "ok",
+  "model": "text-embedding-3-small",
+  "collection": "wealthconnect_chunks",
+  "chunks": 13
+}
+
+--------------------------------------------------------------
+POST /query  —  answered case
+--------------------------------------------------------------
+Request:
+  {"question": "What was the Q4 portfolio return?"}
+
+Response:
+{
+  "answer": "Based on the provided context: Our core aggressive growth fund
+  yielded a 12% return in Q4, driven by AI and renewable energy.
+  [1] See q4_earnings_report.pdf (Performance) for details.",
+  "sources": [
+    {
+      "source": "q4_earnings_report.pdf",
+      "chunk_id": "q4_earnings_report.pdf:1",
+      "score": 0.077227,
+      "section": "Performance"
+    },
+    {
+      "source": "q4_earnings_report.pdf",
+      "chunk_id": "q4_earnings_report.pdf:0",
+      "score": 0.076076,
+      "section": "Overview"
+    },
+    {
+      "source": "q4_earnings_report.pdf",
+      "chunk_id": "q4_earnings_report.pdf:4",
+      "score": 0.060944,
+      "section": "Allocation"
+    },
+    {
+      "source": "about.html",
+      "chunk_id": "about.html:1",
+      "score": 0.051708,
+      "section": "Features"
+    },
+    {
+      "source": "q4_earnings_report.pdf",
+      "chunk_id": "q4_earnings_report.pdf:2",
+      "score": 0.044608,
+      "section": "Outlook"
+    }
+  ],
+  "status": "answered"
+}
+
+--------------------------------------------------------------
+POST /query  —  refused case (off-topic / weak context)
+--------------------------------------------------------------
+Request:
+  {"question": "What is the capital of France?"}
+
+Response:
+{
+  "answer": "I don't have enough reliable context in my knowledge base to
+  answer that question. Please rephrase your question or contact a
+  WealthConnect advisor directly.",
+  "sources": [],
+  "status": "refused_weak_context"
+}
+
+--------------------------------------------------------------
+POST /query  —  validation error (question too short)
+--------------------------------------------------------------
+Request:
+  {"question": "Hi"}
+
+Response (HTTP 422):
+{
+  "detail": [
+    {
+      "type": "string_too_short",
+      "loc": ["body", "question"],
+      "msg": "String should have at least 3 characters",
+      "input": "Hi",
+      "ctx": {"min_length": 3}
+    }
+  ]
+}
+
+--------------------------------------------------------------
+Config loaded from environment (.env)
+--------------------------------------------------------------
+EMBED_MODEL            = text-embedding-3-small   (default)
+CHAT_MODEL             = gpt-4o-mini              (default)
+COLLECTION_NAME        = wealthconnect_chunks     (default)
+MIN_TOP_SCORE          = 0.06                     (default)
+MIN_SUPPORTING_CHUNKS  = 1                        (default)
+RETRIEVAL_K            = 5                        (default)
+OPENAI_API_KEY         = <from .env>
