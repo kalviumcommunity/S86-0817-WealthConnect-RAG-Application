@@ -1,0 +1,205 @@
+=================================================================
+GY3.38 — Context Injection & Prompt Augmentation
+=================================================================
+
+Model context window : 8192 tokens
+Reserved for answer  : 1500 tokens
+Reserved for system  : 400 tokens
+Reserved for question: 200 tokens
+Max context budget   : 6092 tokens
+
+=================================================================
+SECTION 1 — Augmented Prompt Assembly (normal budget)
+=================================================================
+
+Question : "How can I reset my WealthConnect password?"
+Note     : Straightforward policy lookup — should cite policies.md sections.
+-------------------------------------------------------
+  Chunks retrieved  : 5
+  Chunks included   : 5
+  Context tokens    : 146
+  Total tokens est. : 224
+  Budget remaining  : 5946 tokens
+  Sources used      :
+    [1] policies.md  — Account Recovery
+    [2] policies.md  — Security
+    [0] policies.md  — Password Reset
+    [0] about.html  — Overview
+    [1] about.html  — Features
+
+  --- FULL PROMPT ---
+  SYSTEM: You are a grounded financial assistant for WealthConnect. Answer the question using ONLY the provided context. If the answer is not in the context, say: "I don't have enough information in the provided context." When possible, cite sources using the markers like [1] or [2].
+
+  Context:
+  
+  [1] policies.md#1  (Account Recovery)
+  Account recovery requires identity verification via registered email or phone number.
+  
+  ---
+  
+  [2] policies.md#2  (Security)
+  Two-factor authentication is mandatory for all premium account holders.
+  
+  ---
+  
+  [3] policies.md#0  (Password Reset)
+  To reset your WealthConnect password, visit the login page and select Forgot Password.
+  
+  ---
+  
+  [4] about.html#0  (Overview)
+  WealthConnect is an AI-powered financial advisory platform for smart, personalised investing.
+  
+  ---
+  
+  [5] about.html#1  (Features)
+  Our RAG assistant answers financial questions with cited, up-to-date sources from your documents.
+  
+  ---
+  
+  Question: How can I reset my WealthConnect password?
+
+Question : "What was the Q4 portfolio return and what is the investment outlook?"
+Note     : Multi-part financial question — should pull multiple earnings chunks.
+-------------------------------------------------------
+  Chunks retrieved  : 5
+  Chunks included   : 5
+  Context tokens    : 141
+  Total tokens est. : 226
+  Budget remaining  : 5951 tokens
+  Sources used      :
+    [0] q4_earnings_report.pdf  — Overview
+    [1] policies.md  — Account Recovery
+    [1] about.html  — Features
+    [4] policies.md  — Refunds
+    [1] q4_earnings_report.pdf  — Performance
+
+  --- FULL PROMPT ---
+  SYSTEM: You are a grounded financial assistant for WealthConnect. Answer the question using ONLY the provided context. If the answer is not in the context, say: "I don't have enough information in the provided context." When possible, cite sources using the markers like [1] or [2].
+
+  Context:
+  
+  [1] q4_earnings_report.pdf#0  (Overview)
+  WealthConnect Q4 Portfolio Analysis and Earnings Overview.
+  
+  ---
+  
+  [2] policies.md#1  (Account Recovery)
+  Account recovery requires identity verification via registered email or phone number.
+  
+  ---
+  
+  [3] about.html#1  (Features)
+  Our RAG assistant answers financial questions with cited, up-to-date sources from your documents.
+  
+  ---
+  
+  [4] policies.md#4  (Refunds)
+  Refunds are processed within 5–7 business days after approval.
+  
+  ---
+  
+  [5] q4_earnings_report.pdf#1  (Performance)
+  Our core aggressive growth fund yielded a 12% return in Q4, driven by AI and renewable energy.
+  
+  ---
+  
+  Question: What was the Q4 portfolio return and what is the investment outlook?
+
+Question : "What is the meaning of life?"
+Note     : Out-of-corpus question — should trigger the 'not enough information' response path.
+-------------------------------------------------------
+  Chunks retrieved  : 5
+  Chunks included   : 5
+  Context tokens    : 155
+  Total tokens est. : 230
+  Budget remaining  : 5937 tokens
+  Sources used      :
+    [1] q4_earnings_report.pdf  — Performance
+    [0] about.html  — Overview
+    [4] q4_earnings_report.pdf  — Allocation
+    [1] about.html  — Features
+    [3] q4_earnings_report.pdf  — Operations
+
+  --- FULL PROMPT ---
+  SYSTEM: You are a grounded financial assistant for WealthConnect. Answer the question using ONLY the provided context. If the answer is not in the context, say: "I don't have enough information in the provided context." When possible, cite sources using the markers like [1] or [2].
+
+  Context:
+  
+  [1] q4_earnings_report.pdf#1  (Performance)
+  Our core aggressive growth fund yielded a 12% return in Q4, driven by AI and renewable energy.
+  
+  ---
+  
+  [2] about.html#0  (Overview)
+  WealthConnect is an AI-powered financial advisory platform for smart, personalised investing.
+  
+  ---
+  
+  [3] q4_earnings_report.pdf#4  (Allocation)
+  The tech sector allocation increased 8 percentage points in Q4.
+  
+  ---
+  
+  [4] about.html#1  (Features)
+  Our RAG assistant answers financial questions with cited, up-to-date sources from your documents.
+  
+  ---
+  
+  [5] q4_earnings_report.pdf#3  (Operations)
+  Customer acquisition costs dropped by $15 per head after deploying the RAG-powered assistant.
+  
+  ---
+  
+  Question: What is the meaning of life?
+
+=================================================================
+SECTION 2 — Token Budget Overflow (tight budget demo)
+=================================================================
+
+Artificial budget cap: 50 tokens
+(Normally {MAX_CONTEXT_TOKENS} tokens — reduced here to show truncation)
+
+  Chunks retrieved          : 5
+  Chunks included (tight)   : 1
+  Chunks included (normal)  : 5
+
+  Tight budget included chunks:
+    [1] policies.md — Account recovery requires identity verification via register...
+
+  Strategies when over budget:
+    1. Use best-ranked chunks first (already done — greedy by score)
+    2. Reduce k to retrieve fewer candidates
+    3. Trim long chunks to N sentences before assembly
+    4. Summarise lower-ranked chunks to compress them
+    5. Re-rank before assembly to maximise relevance per token
+
+=================================================================
+SECTION 3 — Source Markers & Citation
+=================================================================
+Every chunk is labelled with a numbered marker before being injected:
+
+      [1] policies.md#0  (Password Reset)
+      To reset your WealthConnect password ...
+
+  The system instruction tells the model to cite these markers in its answer.
+  A grounded answer might look like:
+
+      "To reset your password, visit the login page and select
+       'Forgot Password' [1]. If you cannot access your account,
+       identity verification via your registered email is required [2]."
+
+  Without markers:
+    - The model may use the context but can't point back to the source.
+    - Auditing which document drove the answer becomes impossible.
+    - Users cannot verify claims against the original documents.
+
+  The "answer only from context" instruction is equally critical:
+    - Without it, the model may blend retrieved facts with its own training
+      knowledge, producing confident but uncited and unverifiable answers.
+    - With it, any gap in retrieved context surfaces as an explicit
+      "I don't have enough information" — a signal to improve retrieval.
+
+=================================================================
+Context injection & prompt augmentation demo complete.
+=================================================================
