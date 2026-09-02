@@ -1,0 +1,142 @@
+=================================================================
+GY3.32 — Similarity Search & Top-K Retrieval
+=================================================================
+
+Embedding model : text-embedding-3-small
+Collection size : 14 chunks
+
+Collection built: 14 chunks indexed.
+
+=================================================================
+SECTION 1 — Top-K Retrieval (k=3) with Scores & Metadata
+=================================================================
+
+Query: "How can I reset my WealthConnect password?"
+-------------------------------------------------------
+  Rank 1
+    score        : 0.103747
+    source       : policies.md
+    section      : Account Recovery
+    chunk_index  : 1
+    text         : Account recovery requires identity verification via registered email or phone nu...
+  Rank 2
+    score        : 0.061596
+    source       : policies.md
+    section      : Password Reset
+    chunk_index  : 0
+    text         : To reset your WealthConnect password, visit the login page and select Forgot Pas...
+  Rank 3
+    score        : 0.059145
+    source       : policies.md
+    section      : Security
+    chunk_index  : 2
+    text         : Two-factor authentication is mandatory for all premium account holders.
+
+Query: "What was the Q4 portfolio return?"
+-------------------------------------------------------
+  Rank 1
+    score        : 0.097192
+    source       : q4_earnings_report.pdf
+    section      : Outlook
+    chunk_index  : 2
+    text         : We project interest rate stabilisation next year and recommend rebalancing to 30...
+  Rank 2
+    score        : 0.094962
+    source       : q4_earnings_report.pdf
+    section      : Performance
+    chunk_index  : 1
+    text         : Our core aggressive growth fund yielded a 12% return in Q4, driven by AI and ren...
+  Rank 3
+    score        : 0.092229
+    source       : q4_earnings_report.pdf
+    section      : Overview
+    chunk_index  : 0
+    text         : WealthConnect Q4 Portfolio Analysis and Earnings Overview.
+
+Query: "How do I request a refund?"
+-------------------------------------------------------
+  Rank 1
+    score        : 0.100253
+    source       : policies.md
+    section      : Refunds
+    chunk_index  : 3
+    text         : All refund requests must be submitted within 30 days of the original transaction...
+  Rank 2
+    score        : 0.026332
+    source       : about.html
+    section      : Integrations
+    chunk_index  : 2
+    text         : We integrate with major brokerages to give users a single, holistic view of thei...
+  Rank 3
+    score        : 0.025127
+    source       : q4_earnings_report.pdf
+    section      : Overview
+    chunk_index  : 0
+    text         : WealthConnect Q4 Portfolio Analysis and Earnings Overview.
+
+Query: "Tell me about the WealthConnect platform"
+-------------------------------------------------------
+  Rank 1
+    score        : 0.117513
+    source       : noise.txt
+    section      : Unrelated
+    chunk_index  : 0
+    text         : The cafeteria menu has pasta and salad today.
+  Rank 2
+    score        : 0.064229
+    source       : noise.txt
+    section      : Unrelated
+    chunk_index  : 1
+    text         : Tomorrow's weather forecast shows heavy rain.
+  Rank 3
+    score        : 0.044099
+    source       : q4_earnings_report.pdf
+    section      : Operations
+    chunk_index  : 4
+    text         : The assistant resolves 65% of Tier 1 queries without human intervention.
+
+=================================================================
+SECTION 2 — Effect of Changing k on Retrieved Context
+=================================================================
+
+Query: "How can I reset my WealthConnect password?"
+
+  k=1:
+    chunks returned : 1
+    score range     : 0.103747 – 0.103747
+    sources         : ['policies.md']
+    assessment      : All results from the expected source — focused.
+  k=3:
+    chunks returned : 3
+    score range     : 0.059145 – 0.103747
+    sources         : ['policies.md', 'policies.md', 'policies.md']
+    assessment      : All results from the expected source — focused.
+  k=5:
+    chunks returned : 5
+    score range     : 0.012657 – 0.103747
+    sources         : ['policies.md', 'policies.md', 'policies.md', 'q4_earnings_report.pdf', 'about.html']
+    assessment      : Expected source present but extra sources included — broader context.
+
+=================================================================
+SECTION 3 — Top-K Trade-Off Analysis
+=================================================================
+k=1  → Fastest, lowest cost, but risks missing complementary context.
+          Best when one chunk fully answers the query (e.g., exact fact lookup).
+
+  k=3  → Sweet spot for most RAG queries. Enough context for multi-part
+          answers; unlikely to overflow a typical LLM context window.
+
+  k=5  → Higher recall: useful when the answer spans multiple sections or
+          documents. Risk: loosely related chunks can distract the LLM and
+          increase prompt token cost.
+
+  Rule of thumb: start at k=3, tune upward if answers are incomplete,
+  tune downward if the LLM returns contradictory or off-topic content.
+
+  CRITICAL: query and corpus must use the same embedding model.
+  Mixing models (e.g. text-embedding-3-small for corpus, ada-002 for query)
+  puts vectors in different spaces — scores are numbers but rankings are wrong.
+
+=================================================================
+Similarity search & top-k retrieval demo complete.
+=================================================================
