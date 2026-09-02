@@ -1,0 +1,112 @@
+=================================================================
+GY3.29 — Embedding Quality Checks & Sanity Tests
+=================================================================
+
+Model   : text-embedding-3-small
+Corpus  : 13 chunks across 3 sources + 2 noise chunks
+Tests   : 8  |  Passed: 7  |  Failed: 1
+
+-----------------------------------------------------------------
+DETAILED RESULTS
+-----------------------------------------------------------------
+
+Test 1: [PASS]  Direct password reset question → policies.md
+  Query          : How can I reset my WealthConnect password?
+  Expected source: policies.md
+  Top source     : policies.md  (score: 0.107409)
+  Top text       : Account recovery requires identity verification via registered email o...
+  Expected rank  : #1 in ranked list
+
+Test 2: [PASS]  Q4 return question → earnings report
+  Query          : What was the Q4 portfolio return?
+  Expected source: q4_earnings_report.pdf
+  Top source     : q4_earnings_report.pdf  (score: 0.084042)
+  Top text       : Our core aggressive growth fund yielded a 12% return in Q4, driven by ...
+  Expected rank  : #1 in ranked list
+
+Test 3: [PASS]  Refund question → policies.md
+  Query          : How do I request a refund?
+  Expected source: policies.md
+  Top source     : policies.md  (score: 0.056261)
+  Top text       : All refund requests must be submitted within 30 days of the original t...
+  Expected rank  : #1 in ranked list
+
+Test 4: [PASS]  Fund performance → earnings report
+  Query          : Which fund performed best in Q4?
+  Expected source: q4_earnings_report.pdf
+  Top source     : q4_earnings_report.pdf  (score: 0.083475)
+  Top text       : Our core aggressive growth fund yielded a 12% return in Q4, driven by ...
+  Expected rank  : #1 in ranked list
+
+Test 5: [PASS]  Platform overview question → about.html
+  Query          : What is WealthConnect?
+  Expected source: about.html
+  Top source     : about.html  (score: 0.105444)
+  Top text       : Our RAG assistant answers financial questions with cited, up-to-date s...
+  Expected rank  : #1 in ranked list
+
+Test 6: [PASS]  Different wording for password reset — tests semantic matching
+  Query          : Steps to recover access to my login credentials
+  Expected source: policies.md
+  Top source     : policies.md  (score: 0.123119)
+  Top text       : To reset your WealthConnect password, visit the login page and select ...
+  Expected rank  : #1 in ranked list
+
+Test 7: [FAIL]  Indirect automation query — should find operations section
+  Query          : How has automation improved customer support efficiency?
+  Expected source: q4_earnings_report.pdf
+  Top source     : noise.txt  (score: 0.145874)
+  Top text       : The cafeteria menu has pasta and salad today.
+  Expected rank  : #3 in ranked list
+
+Test 8: [PASS]  Unrelated text — top result should be the noise chunk (interesting case)
+  Query          : The cafeteria menu has pasta and salad today
+  Expected source: noise.txt
+  Top source     : noise.txt  (score: 0.104643)
+  Top text       : The cafeteria menu has pasta and salad today.
+  Expected rank  : #1 in ranked list
+
+-----------------------------------------------------------------
+SUMMARY
+-----------------------------------------------------------------
+  Tests run : 8
+  Passed    : 7
+  Failed    : 1
+  Pass rate : 87.5%
+
+-----------------------------------------------------------------
+INTERESTING / SURPRISING CASES
+-----------------------------------------------------------------
+Test 8 (unrelated query) is intentionally interesting: the query text is
+the noise chunk verbatim, so it ranks #1 from noise.txt with a very high
+score. This confirms the embedding pipeline is working correctly — an
+exact match always wins. It also shows that without query filtering, a
+user could accidentally retrieve irrelevant content if their query text
+closely mirrors an unrelated stored chunk.
+
+Test 6 (paraphrase — "recover access to login credentials") tests whether
+the model handles synonymous intent even when none of the exact words
+appear in the target chunk. A failure here would signal the embedding
+model is too keyword-sensitive and needs to be swapped for a stronger one.
+
+Test 7 (indirect automation query) is the hardest: "automation" and
+"customer support efficiency" do not appear literally in the corpus.
+The pipeline must bridge the semantic gap to find the operations section
+of the earnings report. A failure here is a useful early warning that
+retrieval may miss implicit financial questions in production.
+
+WHAT BREAKS RETRIEVAL (pipeline risks identified):
+  1. Model mismatch — embedding corpus with model A and queries with model B
+     puts vectors in different spaces; scores become meaningless.
+  2. Stale store — re-using old embeddings after swapping models without
+     re-processing the corpus causes silent ranking failures.
+  3. Wrong metric — using Euclidean distance on non-normalised vectors gives
+     different rankings than cosine similarity on the same vectors.
+  4. Duplicate chunks — two identical chunks share a top score, pushing
+     the expected unique result to rank #2 or lower.
+  5. Text cleaning mismatch — if chunks were lowercased before embedding
+     but queries are not (or vice versa), scores degrade unpredictably.
+
+=================================================================
+Sanity tests complete.
+=================================================================
