@@ -1,0 +1,199 @@
+=================================================================
+GY3.35 — Chunk Re-Ranking for Precision
+=================================================================
+
+Embedding model  : text-embedding-3-small
+Candidate k      : 10  (vector retrieval)
+Final k          : 3   (after re-ranking)
+Corpus size      : 19 chunks
+
+Collection built : 19 chunks indexed.
+
+=================================================================
+Query  : "How can I reset my WealthConnect password?"
+Note   : Direct intent match — re-ranking should surface the explicit reset chunk above general security ones.
+=================================================================
+
+  BEFORE re-ranking  (top 3 of 10 by vector score)
+  ----------------------------------------------------------
+  Rank 1
+    vector_score : 0.071525
+    rerank_score : n/a
+    source       : policies.md
+    section      : Password Reset
+    text         : To reset your WealthConnect password, visit the login page and select Forgot Password...
+  Rank 2
+    vector_score : 0.068059
+    rerank_score : n/a
+    source       : policies.md
+    section      : Account Recovery
+    text         : Account recovery requires identity verification via registered email or phone number.
+  Rank 3
+    vector_score : 0.062923
+    rerank_score : n/a
+    source       : policies.md
+    section      : Security
+    text         : Two-factor authentication is mandatory for all premium account holders.
+
+  AFTER  re-ranking  (top 3 of 10 by rerank score)
+  ----------------------------------------------------------
+  Rank 1
+    vector_score : 0.071525
+    rerank_score : 0.315789
+    source       : policies.md
+    section      : Password Reset
+    text         : To reset your WealthConnect password, visit the login page and select Forgot Password...
+  Rank 2
+    vector_score : 0.018257
+    rerank_score : 0.111111
+    source       : about.html
+    section      : Overview
+    text         : WealthConnect is an AI-powered financial advisory platform for smart, personalised in...
+  Rank 3
+    vector_score : 0.068059
+    rerank_score : 0.0
+    source       : policies.md
+    section      : Account Recovery
+    text         : Account recovery requires identity verification via registered email or phone number.
+
+  Rank changes after re-ranking:
+    MOVED IN  : WealthConnect is an AI-powered financial advisory platform for smart, personalis...
+    MOVED OUT : Two-factor authentication is mandatory for all premium account holders.
+=================================================================
+Query  : "What was the Q4 portfolio return?"
+Note   : Financial data query — re-ranking should move the performance chunk (12% return) above the broader overview.
+=================================================================
+
+  BEFORE re-ranking  (top 3 of 10 by vector score)
+  ----------------------------------------------------------
+  Rank 1
+    vector_score : 0.127737
+    rerank_score : n/a
+    source       : q4_earnings_report.pdf
+    section      : Bonds
+    text         : Our bond portfolio underperformed relative to benchmark by 1.2% in Q3.
+  Rank 2
+    vector_score : 0.104512
+    rerank_score : n/a
+    source       : q4_earnings_report.pdf
+    section      : Outlook
+    text         : We project interest rate stabilisation next year and recommend rebalancing to 30% hig...
+  Rank 3
+    vector_score : 0.089002
+    rerank_score : n/a
+    source       : q4_earnings_report.pdf
+    section      : Overview
+    text         : WealthConnect Q4 Portfolio Analysis and Earnings Overview.
+
+  AFTER  re-ranking  (top 3 of 10 by rerank score)
+  ----------------------------------------------------------
+  Rank 1
+    vector_score : 0.089002
+    rerank_score : 0.307692
+    source       : q4_earnings_report.pdf
+    section      : Overview
+    text         : WealthConnect Q4 Portfolio Analysis and Earnings Overview.
+  Rank 2
+    vector_score : 0.072047
+    rerank_score : 0.25
+    source       : q4_earnings_report.pdf
+    section      : Allocation
+    text         : The tech sector allocation increased 8 percentage points in Q4.
+  Rank 3
+    vector_score : 0.085023
+    rerank_score : 0.173913
+    source       : q4_earnings_report.pdf
+    section      : Performance
+    text         : Our core aggressive growth fund yielded a 12% return in Q4, driven by AI and renewabl...
+
+  Rank changes after re-ranking:
+    MOVED IN  : The tech sector allocation increased 8 percentage points in Q4.
+    MOVED IN  : Our core aggressive growth fund yielded a 12% return in Q4, driven by AI and ren...
+    MOVED OUT : Our bond portfolio underperformed relative to benchmark by 1.2% in Q3.
+    MOVED OUT : We project interest rate stabilisation next year and recommend rebalancing to 30...
+=================================================================
+Query  : "How do I get a refund?"
+Note   : Refund query — re-ranking should prioritise the refund policy chunk over fee-waiver tangents.
+=================================================================
+
+  BEFORE re-ranking  (top 3 of 10 by vector score)
+  ----------------------------------------------------------
+  Rank 1
+    vector_score : 0.109993
+    rerank_score : n/a
+    source       : noise.txt
+    section      : Unrelated
+    text         : Tomorrow's weather forecast shows heavy rain.
+  Rank 2
+    vector_score : 0.093981
+    rerank_score : n/a
+    source       : noise.txt
+    section      : Unrelated
+    text         : The quarterly board meeting is scheduled for next Thursday.
+  Rank 3
+    vector_score : 0.079452
+    rerank_score : n/a
+    source       : noise.txt
+    section      : Unrelated
+    text         : The cafeteria menu has pasta and salad today.
+
+  AFTER  re-ranking  (top 3 of 10 by rerank score)
+  ----------------------------------------------------------
+  Rank 1
+    vector_score : 0.109993
+    rerank_score : 0.0
+    source       : noise.txt
+    section      : Unrelated
+    text         : Tomorrow's weather forecast shows heavy rain.
+  Rank 2
+    vector_score : 0.093981
+    rerank_score : 0.0
+    source       : noise.txt
+    section      : Unrelated
+    text         : The quarterly board meeting is scheduled for next Thursday.
+  Rank 3
+    vector_score : 0.079452
+    rerank_score : 0.0
+    source       : noise.txt
+    section      : Unrelated
+    text         : The cafeteria menu has pasta and salad today.
+
+  Rank changes after re-ranking:
+    No changes — vector order already optimal for this query.
+
+=================================================================
+COST & LATENCY TRADE-OFF
+=================================================================
+RETRIEVAL (vector search)
+    Latency : Sub-millisecond — one ANN (approximate nearest-neighbour)
+              lookup against the full index.
+    Cost    : Essentially free after indexing; no extra API calls.
+    Quality : Good broad recall; may rank loosely related chunks above
+              directly relevant ones when topics overlap.
+
+  RE-RANKING (cross-encoder / LLM scoring)
+    Latency : Adds N extra scoring calls where N = CANDIDATE_K.
+              With LLM scoring each call may take 200–500 ms.
+              With a cross-encoder model it is much faster (~10 ms/chunk).
+    Cost    : Each scoring call consumes tokens / compute.
+              10 candidates × average 50 tokens ≈ 500 extra input tokens.
+    Quality : Significantly improves precision for ambiguous queries
+              because the scorer sees query + chunk together, not as
+              independent vectors.
+
+  WHEN TO USE RE-RANKING
+    ✓  Precision matters more than raw speed (e.g. financial advice)
+    ✓  Initial retrieval returns mixed-quality results
+    ✓  Queries are long or ambiguous
+    ✗  Real-time applications where every millisecond counts
+    ✗  Corpus is small and vector retrieval already gives clean results
+
+  RECOMMENDED APPROACH
+    1. Retrieve a candidate set 3–5× larger than final_k (e.g. k=10 → final 3)
+    2. Re-rank with a cross-encoder (faster) or LLM prompt (more flexible)
+    3. Send only final_k chunks to the LLM — keeps prompts focused and cheap
+    4. Monitor: log both vector_score and rerank_score to detect drift
+
+=================================================================
+Re-ranking demo complete.
+=================================================================
