@@ -1,0 +1,109 @@
+============================================================
+GY3.28 - Batch Embedding & Rate/Cost Management
+============================================================
+
+--- RUN SUMMARY ---
+  model                       : text-embedding-3-small
+  total_chunks                : 12
+  skipped_existing            : 0
+  pending                     : 12
+  embedded                    : 12
+  failed                      : 0
+  input_tokens_estimated      : 272
+  batches_processed           : 1
+  estimated_cost_usd          : 5.44e-06
+
+  Price per 1K tokens (USD) : $2e-05
+  Estimated total cost (USD): $0.00000544
+
+--- EMBEDDING STORE (first 8 dims shown) ---
+
+  ID      : d107de5e23cf131d
+  Source  : q4_earnings_report.pdf
+  Text    : WealthConnect Q4 Portfolio Analysis and Earnings Overview.
+  Dim     : 1536
+  Vec[:8] : [-1.734172, 0.046814, 0.108589, -0.115136, 1.31412, -0.795033, -0.957273, -1.116443]
+
+  ID      : 03b67f4b0c21234c
+  Source  : q4_earnings_report.pdf
+  Text    : Our core aggressive growth fund yielded a 12% return, driven by AI and...
+  Dim     : 1536
+  Vec[:8] : [1.691924, -0.78516, -1.476267, -1.832808, -1.013082, 0.908941, 1.217962, 2.075954]
+
+  ID      : 384f7c7a99fa61aa
+  Source  : q4_earnings_report.pdf
+  Text    : Customer acquisition costs dropped by $15 per head after deploying the...
+  Dim     : 1536
+  Vec[:8] : [-0.036235, -0.649943, 0.432826, -0.472407, -2.282367, 1.350972, -0.782806, 0.086823]
+
+  ID      : ff807de7a3050b47
+  Source  : q4_earnings_report.pdf
+  Text    : The assistant resolves 65% of Tier 1 queries without human interventio...
+  Dim     : 1536
+  Vec[:8] : [0.306286, 1.800233, -0.350668, 0.533457, -0.273061, -0.273441, -0.231183, 0.731157]
+
+  ID      : 8dfd69fdd0c3f549
+  Source  : q4_earnings_report.pdf
+  Text    : We project interest rate stabilisation next year and recommend rebalan...
+  Dim     : 1536
+  Vec[:8] : [0.862079, 1.192048, -1.540576, 0.307216, -1.379155, 1.940816, -0.375067, -1.146205]
+
+  ID      : 09083c9815703522
+  Source  : policies.md
+  Text    : All refund requests must be submitted within 30 days of the original t...
+  Dim     : 1536
+  Vec[:8] : [0.477418, 1.273654, 0.576248, 0.956509, -0.478567, 2.75343, 0.121471, 0.682573]
+
+  ID      : da1db9c087e27f30
+  Source  : policies.md
+  Text    : To reset your WealthConnect password, visit the login page and select ...
+  Dim     : 1536
+  Vec[:8] : [1.170053, 0.204058, 0.096901, -0.643458, 1.159911, -1.94407, -0.298254, -0.858883]
+
+  ID      : 0883ba0f04d43289
+  Source  : policies.md
+  Text    : Account recovery requires identity verification via registered email o...
+  Dim     : 1536
+  Vec[:8] : [-1.141824, -0.729101, 1.195173, 0.133329, 0.248708, 0.068833, -0.456107, 0.379342]
+
+  ID      : 443e3a62ee82e7f2
+  Source  : policies.md
+  Text    : Two-factor authentication is mandatory for all premium account holders...
+  Dim     : 1536
+  Vec[:8] : [-1.232546, 0.22239, -0.274171, -1.583351, -0.044604, -1.640598, -1.171271, 0.278745]
+
+  ID      : 8949e8c92bae7d22
+  Source  : https://wealthconnect.io/about
+  Text    : WealthConnect is an AI-powered financial advisory platform for smart, ...
+  Dim     : 1536
+  Vec[:8] : [-0.31704, -0.210432, 0.846332, 0.031976, -0.314398, -2.436524, -1.112578, 0.105816]
+
+  ID      : feb4e7e87252bff2
+  Source  : https://wealthconnect.io/about
+  Text    : Our RAG assistant answers financial questions with cited, up-to-date s...
+  Dim     : 1536
+  Vec[:8] : [-1.1811, -0.390592, -0.921534, -1.143637, -0.162435, -1.26797, -1.039724, -1.207465]
+
+  ID      : 4b3b58db37997ca8
+  Source  : https://wealthconnect.io/about
+  Text    : We integrate with major brokerages to give users a single, holistic vi...
+  Dim     : 1536
+  Vec[:8] : [0.460084, -1.361671, 1.118763, 1.227389, 0.031482, 0.770366, -1.21949, 0.13227]
+
+--- RESUME SAFETY DEMO ---
+  Re-running the pipeline now skips all already-embedded chunks.
+  12 chunk(s) are in the store — they will be skipped next run.
+  Only new or previously-failed chunks will be sent to the API.
+
+--- HOW BACKOFF WORKS ---
+  On a RateLimitError or transient server error the pipeline waits:
+    attempt 1 → wait 1s
+    attempt 2 → wait 2s
+    attempt 3 → wait 4s
+    attempt 4 → wait 8s
+    attempt 5 → raise (permanent failure logged in summary)
+  Permanent errors (auth, bad request) raise immediately.
+
+============================================================
+Batch embedding pipeline complete.
+============================================================
