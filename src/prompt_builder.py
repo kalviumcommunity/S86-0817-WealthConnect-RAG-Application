@@ -23,6 +23,7 @@ import json
 from pathlib import Path
 from openai import OpenAI
 from dotenv import load_dotenv
+from prompts.templates import PromptTemplates
 
 load_dotenv()
 
@@ -104,19 +105,14 @@ def build_user_message(question: str, context: str) -> str:
     Returns:
         A structured user message string ready for the API call.
     """
-    if context.strip():
-        return (
-            "The following context has been retrieved from the bank's current "
-            "approved wealth-management documents. Use ONLY this context to answer.\n\n"
-            f"--- DOCUMENT CONTEXT START ---\n{context}\n--- DOCUMENT CONTEXT END ---\n\n"
-            f"Relationship Manager Question: {question}"
-        )
-    else:
-        # No context retrieved — signal the model to use the fallback
-        return (
-            "No relevant information was found in the current approved wealth documents.\n\n"
-            f"Relationship Manager Question: {question}"
-        )
+    context_value = context.strip() or (
+        "No relevant information was found in the current approved wealth documents."
+    )
+    return PromptTemplates.render(
+        PromptTemplates.RAG_USER_MESSAGE,
+        context=context_value,
+        question=question,
+    )
 
 
 # ---------------------------------------------------------------------------

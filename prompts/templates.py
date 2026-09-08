@@ -4,14 +4,21 @@ Keep logic out of this file.
 """
 
 class PromptTemplates:
-    
-    # Task 1: Define a template with named placeholders
+
     RAG_QA_PROMPT = (
         "You are a helpful financial assistant.\n"
         "Use the provided context to answer the user's question.\n\n"
         "Context:\n{context}\n\n"
         "Question:\n{question}\n\n"
         "Please provide a structured and concise answer."
+    )
+
+    RAG_USER_MESSAGE = (
+        "The following context has been retrieved from the bank's current "
+        "approved wealth-management documents. Use ONLY this context to answer.\n\n"
+        "--- DOCUMENT CONTEXT START ---\n{context}\n"
+        "--- DOCUMENT CONTEXT END ---\n\n"
+        "Relationship Manager Question: {question}"
     )
 
     SUMMARIZATION_PROMPT = (
@@ -22,7 +29,7 @@ class PromptTemplates:
     @staticmethod
     def render(template_str: str, **kwargs) -> str:
         """
-        Task 1: Render function that fills the placeholders.
+        Render a named-placeholder template with runtime values.
         """
         try:
             return template_str.format(**kwargs)
