@@ -9,6 +9,9 @@ env/
 
 # Secrets — NEVER commit
 .env
+.env.*
+!.env.example
+*.pem
 
 # Raw wealth documents (sensitive bank material)
 data/
