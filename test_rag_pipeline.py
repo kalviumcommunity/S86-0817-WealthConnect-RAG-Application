@@ -4,8 +4,11 @@ from rag_pipeline import (
     FALLBACK_ANSWER,
     answer_query,
     assemble_context,
+    build_citation_map,
+    build_cited_prompt,
     embed_query,
     retrieve_context,
+    validate_citations,
 )
 from similarity_search import VectorCollection
 
@@ -40,13 +43,34 @@ class RagPipelineTests(unittest.TestCase):
         self.assertEqual(chunks[0]["text"], "Approved refund policy.")
         self.assertIn("[1] Source: policy.md (Refunds)", context)
 
+    def test_citation_map_preserves_exact_source_text(self):
+        chunks = [{
+            "id": "chunk-1",
+            "text": "Approved refund policy.",
+            "metadata": {
+                "source": "policy.md",
+                "chunk_index": 4,
+                "section": "Refunds",
+            },
+        }]
+
+        citation_map = build_citation_map(chunks)
+        prompt = build_cited_prompt("refund question", chunks)
+
+        self.assertEqual(citation_map["[1]"]["source"], "policy.md")
+        self.assertEqual(citation_map["[1]"]["chunk_id"], "chunk-1")
+        self.assertEqual(citation_map["[1]"]["text"], "Approved refund policy.")
+        self.assertIn("Only use markers that appear in the context", prompt)
+        self.assertTrue(validate_citations("Refunds are allowed [1].", citation_map))
+        self.assertFalse(validate_citations("Refunds are allowed [9].", citation_map))
+
     def test_answer_query_injects_context_into_generator(self):
         captured = {}
 
         def generator(query, context):
             captured["query"] = query
             captured["context"] = context
-            return "Refunds are available."
+            return "Refunds are available [1]."
 
         result = answer_query(
             "refund question",
@@ -56,10 +80,24 @@ class RagPipelineTests(unittest.TestCase):
             k=1,
         )
 
-        self.assertEqual(result["answer"], "Refunds are available.")
+        self.assertEqual(result["answer"], "Refunds are available [1].")
         self.assertEqual(result["retrieved_count"], 1)
         self.assertEqual(result["sources"][0]["source"], "policy.md")
         self.assertIn("Approved refund policy.", captured["context"])
+        self.assertTrue(result["citations_valid"])
+
+    def test_fabricated_citation_returns_fallback(self):
+        result = answer_query(
+            "refund question",
+            self.collection,
+            self.embedder,
+            generator=lambda query, context: "Refunds are available [99].",
+            k=1,
+        )
+
+        self.assertEqual(result["answer"], FALLBACK_ANSWER)
+        self.assertEqual(result["citations"], {})
+        self.assertFalse(result["citations_valid"])
 
     def test_empty_retrieval_returns_fallback_without_generation(self):
         empty_collection = VectorCollection()
