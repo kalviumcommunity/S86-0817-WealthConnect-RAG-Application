@@ -14,8 +14,11 @@ Now uses document_loader.py (GY3.19) for real multi-format intake:
   .html — web-exported compliance pages
 """
 
+from pathlib import Path
+
 from dotenv import load_dotenv
-from src.document_loader import load_all_documents, print_intake_report
+from src.document_loader import load_all_documents, load_text, print_intake_report
+from text_cleaner import clean_text
 
 load_dotenv()
 
@@ -40,6 +43,10 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
     Returns:
         List of text chunk strings.
     """
+    if chunk_size < 1:
+        raise ValueError("chunk_size must be positive")
+    if overlap < 0 or overlap >= chunk_size:
+        raise ValueError("overlap must be non-negative and smaller than chunk_size")
     if not text.strip():
         return []
 
@@ -52,6 +59,82 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
         start += chunk_size - overlap
 
     return chunks
+
+
+def ingest_corpus(
+    data_dir: str = "data",
+    chunk_size: int = 500,
+    overlap: int = 50,
+    verbose: bool = True,
+) -> dict:
+    """Run load, clean, chunk, and metadata tagging for every file.
+
+    Unlike ``run_ingestion``, this function includes unsupported files in the
+    attempted-file count so the returned reconciliation check can detect any
+    document that would otherwise disappear silently.
+    """
+    data_path = Path(data_dir)
+    files = sorted(path for path in data_path.rglob("*") if path.is_file())
+    chunks: list[dict] = []
+    failures: list[dict] = []
+    documents_ingested = 0
+
+    for path in files:
+        try:
+            raw_text = load_text(path)
+            cleaned_text = clean_text(raw_text)
+            if not cleaned_text:
+                raise ValueError("document contains no text after cleaning")
+
+            document = {
+                "source": path.name,
+                "extension": path.suffix.lower(),
+                "char_count": len(cleaned_text),
+            }
+            document_chunks = chunk_text(cleaned_text, chunk_size, overlap)
+            for chunk_index, chunk in enumerate(document_chunks):
+                chunks.append({
+                    "text": chunk,
+                    "metadata": build_metadata(document, chunk_index),
+                })
+            documents_ingested += 1
+        except Exception as exc:
+            failures.append({
+                "source": path.name,
+                "filepath": str(path),
+                "reason": f"{type(exc).__name__}: {exc}",
+            })
+
+    summary = {
+        "files_found": len(files),
+        "documents_ingested": documents_ingested,
+        "chunks_produced": len(chunks),
+        "failures": failures,
+        "reconciled": documents_ingested + len(failures) == len(files),
+        "sample_chunk": chunks[0] if chunks else None,
+        "chunks": chunks,
+    }
+
+    if verbose:
+        print(
+            f"[ingest] files={summary['files_found']} "
+            f"docs={summary['documents_ingested']} "
+            f"chunks={summary['chunks_produced']} "
+            f"failures={len(failures)}"
+        )
+        for failure in failures:
+            print(f"[ingest] FAILED: {failure['source']} - {failure['reason']}")
+        if summary["sample_chunk"]:
+            sample = summary["sample_chunk"]
+            print(
+                f"[ingest] sample: {sample['text'][:80]!r} | "
+                f"{sample['metadata']}"
+            )
+
+    if not summary["reconciled"]:
+        raise RuntimeError("ingestion reconciliation failed: a file was silently dropped")
+
+    return summary
 
 
 # ---------------------------------------------------------------------------
@@ -167,12 +250,15 @@ def run_ingestion(data_dir: str = "data", verbose: bool = True) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    chunks = run_ingestion()
-    print(f"\n[ingest] Ingestion complete — {len(chunks)} chunk(s) ready for embedding.")
+    report = ingest_corpus()
+    print(
+        f"\n[ingest] Ingestion complete — "
+        f"{report['chunks_produced']} chunk(s) ready for embedding."
+    )
 
     # Inspect first chunk as a sanity check
-    if chunks:
-        first = chunks[0]
+    if report["sample_chunk"]:
+        first = report["sample_chunk"]
         print(f"\nFirst chunk preview:")
         print(f"  source  : {first['metadata']['document_name']}")
         print(f"  format  : {first['metadata']['source_format']}")

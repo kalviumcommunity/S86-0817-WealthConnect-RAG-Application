@@ -26,8 +26,6 @@ corrupt document never stops the rest of the corpus from loading.
 """
 
 from pathlib import Path
-from pypdf import PdfReader
-from bs4 import BeautifulSoup
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +64,11 @@ def _load_pdf(path: Path) -> str:
     Returns the full extracted text, or an empty string if no text is found
     (e.g. a fully scanned/image-only PDF).
     """
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:
+        raise RuntimeError("PDF support requires the 'pypdf' package") from exc
+
     reader = PdfReader(path)
     pages  = []
 
@@ -101,6 +104,11 @@ def _load_html(path: Path) -> str:
       - Web-exported compliance pages
       - Product information pages saved as HTML
     """
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError as exc:
+        raise RuntimeError("HTML support requires the 'beautifulsoup4' package") from exc
+
     raw_html = path.read_text(encoding="utf-8", errors="ignore")
     soup     = BeautifulSoup(raw_html, "html.parser")
     return soup.get_text(separator=" ", strip=True)
