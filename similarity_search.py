@@ -27,9 +27,34 @@ EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-small")
 # ---------------------------------------------------------------------------
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
-    a, b = np.array(a), np.array(b)
+    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("embedding vectors must be one-dimensional")
+    if a.shape != b.shape:
+        raise ValueError("embedding vectors must have the same dimensions")
     denom = np.linalg.norm(a) * np.linalg.norm(b)
     return float(np.dot(a, b) / denom) if denom > 0 else 0.0
+
+
+def rank_by_similarity(
+    query_vector: list[float],
+    records: list[dict],
+    top_k: int | None = None,
+) -> list[dict]:
+    """Score records against a query vector and return highest scores first."""
+    if top_k is not None and top_k < 0:
+        raise ValueError("top_k must be non-negative")
+
+    ranked = []
+    for record in records:
+        ranked.append({
+            "score": cosine_similarity(query_vector, record["embedding"]),
+            "text": record["text"],
+            "metadata": record["metadata"],
+        })
+
+    ranked.sort(key=lambda item: item["score"], reverse=True)
+    return ranked if top_k is None else ranked[:top_k]
 
 
 # ---------------------------------------------------------------------------
@@ -150,16 +175,7 @@ class VectorCollection:
 
     def search(self, vector: list[float], top_k: int) -> list[dict]:
         """Return top_k records sorted by cosine similarity (highest first)."""
-        scored = [
-            {
-                "score":    cosine_similarity(vector, rec["embedding"]),
-                "text":     rec["text"],
-                "metadata": rec["metadata"],
-            }
-            for rec in self._records
-        ]
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        return scored[:top_k]
+        return rank_by_similarity(vector, self._records, top_k)
 
     def __len__(self):
         return len(self._records)
