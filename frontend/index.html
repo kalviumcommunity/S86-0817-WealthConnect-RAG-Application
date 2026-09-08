@@ -26,7 +26,7 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
       font-size: 15px;
       line-height: 1.6;
       min-height: 100vh;
@@ -47,7 +47,6 @@
       font-size: 1.75rem;
       font-weight: 700;
       color: var(--accent);
-      letter-spacing: -0.5px;
     }
     header p { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
 
@@ -396,17 +395,17 @@
     hadCitations = true;
     citationList.innerHTML = "";
 
-    sources.forEach((src) => {
+    sources.forEach((src, index) => {
       const details = document.createElement("details");
 
       const summary = document.createElement("summary");
       summary.innerHTML = `
-        <span class="citation-label">${escHtml(src.label)}</span>
+        <span class="citation-label">${escHtml(src.label || `[${index + 1}]`)}</span>
         <span class="citation-meta">
-          <span class="doc">${escHtml(src.document)}</span>
+          <span class="doc">${escHtml(src.source)}</span>
           ${src.section ? ` — <span>${escHtml(src.section)}</span>` : ""}
           <br/>
-          <span class="chunk-id">${escHtml(src.chunk_id)}</span>
+          <span class="chunk-id">${escHtml(src.chunk_id || "retrieved source")}</span>
         </span>
         <span class="citation-score">score: ${typeof src.score === "number" ? src.score.toFixed(4) : "—"}</span>
       `;
@@ -414,7 +413,7 @@
 
       const body = document.createElement("div");
       body.className = "citation-body";
-      body.innerHTML = `<p>${escHtml(src.text)}</p>`;
+      body.innerHTML = `<p>${escHtml(src.text || "This source was retrieved for the answer.")}</p>`;
       details.appendChild(body);
 
       citationList.appendChild(details);
@@ -431,97 +430,38 @@
       .replace(/"/g,"&quot;");
   }
 
-  // ── Main stream handler ───────────────────────────────────────────────────
-  async function streamAnswer(question) {
+  // ── Query handler ─────────────────────────────────────────────────────────
+  async function askAnswer(question) {
     resetOutput();
     setStreaming(true);
-    setStatus("Retrieving context…", "streaming");
-
-    let cursorEl = document.createElement("span");
-    cursorEl.className = "cursor";
-    cursorEl.setAttribute("aria-hidden", "true");
+    setStatus("Searching approved sources…", "streaming");
 
     try {
-      const response = await fetch(`${API_URL}/query/stream`, {
+      const response = await fetch(`${API_URL}/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),
       });
 
-      if (!response.ok || !response.body) {
-        throw new Error(`Server returned ${response.status}`);
+      if (!response.ok) {
+        let detail = `Server returned ${response.status}`;
+        try {
+          const payload = await response.json();
+          detail = payload.detail || detail;
+        } catch (_) {}
+        throw new Error(detail);
       }
 
-      const reader  = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-
-        for (const line of chunk.split("\n")) {
-          if (!line.startsWith("data: ")) continue;
-
-          let event;
-          try { event = JSON.parse(line.slice(6)); }
-          catch { continue; }
-
-          // ── citations ──
-          if (event.type === "citations") {
-            renderCitations(event.sources);
-            setStatus("Generating answer…", "streaming");
-          }
-
-          // ── token ──
-          if (event.type === "token") {
-            partialAnswer += event.text;
-
-            if (answerCard.hidden) {
-              answerCard.hidden = false;
-              answerText.appendChild(cursorEl);
-            }
-
-            // Insert text node before cursor
-            answerText.insertBefore(
-              document.createTextNode(event.text),
-              cursorEl
-            );
-          }
-
-          // ── done ──
-          if (event.type === "done") {
-            cursorEl.remove();
-            setStatus("Done", "done");
-          }
-
-          // ── error mid-stream ──
-          if (event.type === "error") {
-            streamInterrupted = true;
-            cursorEl.remove();
-            if (partialAnswer) {
-              incompleteBadge.hidden = false;
-            } else {
-              showError(event.message, true);
-            }
-            setStatus("Stream interrupted", "error");
-          }
-        }
-      }
+      const result = await response.json();
+      answerCard.hidden = false;
+      answerText.textContent = result.answer || "No answer was returned.";
+      renderCitations(result.sources || []);
+      const refused = result.status && result.status.startsWith("refused");
+      setStatus(refused ? "No supporting context found" : "Grounded answer ready", refused ? "error" : "done");
 
     } catch (err) {
-      streamInterrupted = true;
-      cursorEl.remove();
-
-      if (partialAnswer) {
-        // Keep partial content, just flag it as incomplete
-        incompleteBadge.hidden = false;
-        setStatus("Stream interrupted — partial answer shown", "error");
-      } else {
-        showError("Could not reach the RAG service. Is the server running?", true);
-        setStatus("Connection failed", "error");
-      }
+      showError(err.message || "Could not reach the RAG service. Is the server running?", true);
+      setStatus("Request failed", "error");
     } finally {
       setStreaming(false);
       questionInput.focus();
@@ -543,11 +483,11 @@
       return;
     }
     lastQuestion = q;
-    streamAnswer(q);
+    askAnswer(q);
   }
 
   function handleRetry() {
-    if (lastQuestion) streamAnswer(lastQuestion);
+    if (lastQuestion) askAnswer(lastQuestion);
   }
 
   // Enter key submits
