@@ -173,9 +173,26 @@ class VectorCollection:
             "metadata":  metadata,
         })
 
-    def search(self, vector: list[float], top_k: int) -> list[dict]:
-        """Return top_k records sorted by cosine similarity (highest first)."""
-        return rank_by_similarity(vector, self._records, top_k)
+    def search(
+        self,
+        vector: list[float],
+        top_k: int,
+        metadata_filter: dict | None = None,
+        min_score: float = float("-inf"),
+    ) -> list[dict]:
+        """Return filtered records sorted by cosine similarity."""
+        if metadata_filter:
+            records = [
+                record for record in self._records
+                if all(record["metadata"].get(key) == value
+                       for key, value in metadata_filter.items())
+            ]
+        else:
+            records = self._records
+
+        ranked = rank_by_similarity(vector, records, top_k=None)
+        ranked = [item for item in ranked if item["score"] >= min_score]
+        return ranked[:top_k]
 
     def __len__(self):
         return len(self._records)
