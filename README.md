@@ -30,22 +30,52 @@ pip install -r requirements.txt
 
 ### 4. Configure environment variables
 ```bash
+# macOS/Linux
 cp .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
 # Open .env and fill in your API keys — never commit this file
 ```
 
 ### 5. Add approved wealth documents
-Place your approved documents (`.txt`, `.pdf`, `.docx`) in the `data/` folder.
+Place approved `.txt`, `.md`, `.pdf`, `.html`, or `.htm` files in `data/`.
 
-### 6. Ingest documents into the vector store
+### 6. Validate ingestion
 ```bash
-python -m src.ingest
+python -m src.ingest        # load, clean, chunk, tag, and report failures
 ```
 
-### 7. Run the assistant
+The command reports `files`, `docs`, `chunks`, and `failures`, and verifies that
+every discovered file is either ingested or listed as a failure.
+
+### 7. Run the backend API
 ```bash
-python -m src.app
+uvicorn rag_api:app --reload --port 8000
 ```
+
+The API is available at `http://localhost:8000`; interactive documentation is
+at `http://localhost:8000/docs`.
+
+### 8. Run the frontend
+
+In a second terminal:
+
+```bash
+python -m http.server 5500 --directory frontend
+```
+
+Open `http://localhost:5500` and ask a question. The page calls
+`POST http://localhost:8000/query`, then displays the grounded answer and its
+retrieved sources. Keep the API and frontend on separate terminals.
+
+For an offline architecture demo that does not require an API key:
+
+```bash
+python rag_pipeline.py
+python rag_evaluation.py
+```
+
+The live API requires the dependencies in `requirements.txt` and an
+`OPENAI_API_KEY`; the offline demos use deterministic mock embeddings.
 
 ---
 
@@ -72,6 +102,12 @@ S86-0817-WealthConnect-RAG-Application/
 │   ├── rag_system_prompt.txt      # Original base system prompt
 │   └── fallback_message.txt       # Safe fallback message template
 ├── outputs/                     # Generated answers, logs, evaluation results (git-ignored)
+├── frontend/index.html          # Dependency-free browser query UI
+├── rag_pipeline.py              # Stage-separated offline RAG orchestration
+├── rag_evaluation.py            # Correctness, grounding, citation scoring
+├── rag_api.py                   # FastAPI /query endpoint
+├── streaming_api.py             # Optional SSE endpoint
+├── docs/e2e_demo.md             # Reproducible delivery evidence
 ├── .env                         # Real secrets — NEVER committed
 ├── .env.example                 # Template showing required keys — committed, no values
 ├── .gitignore
@@ -196,6 +232,70 @@ Four sample documents are included in `data/` covering all supported formats:
 | `sample_eligibility_guidelines.txt` | `.txt` | Eligibility guidelines |
 
 ---
+
+## Configuration
+
+`.env.example` documents the supported settings. Copy it to `.env` locally and
+keep the real file out of version control.
+
+| Variable | Required for | Default |
+|----------|--------------|---------|
+| `OPENAI_API_KEY` | live embeddings and generation | empty |
+| `OPENAI_BASE_URL` | OpenAI-compatible provider | `https://api.openai.com/v1` |
+| `CHAT_MODEL` | live chat generation | `gpt-4o-mini` |
+| `EMBED_MODEL` | live embeddings | `text-embedding-3-small` |
+| `COLLECTION_NAME` | API health metadata | `wealthconnect_chunks` |
+| `MIN_TOP_SCORE` | API retrieval guardrail | `0.06` |
+| `MIN_SUPPORTING_CHUNKS` | API retrieval guardrail | `1` |
+| `RETRIEVAL_K` | API retrieval breadth | `5` |
+
+Never place keys in source code, the frontend, committed output files, or pull
+requests. Configure secrets in the deployment environment instead.
+
+## End-to-End Flow
+
+The reproducible local flow is:
+
+```text
+approved documents -> load/clean/chunk/tag -> embed/index -> query embedding
+-> filtered retrieval -> grounded generation -> answer + source citations
+```
+
+`src.ingest` validates the load/clean/chunk/tag stages. `src.embeddings` owns
+embedding and ChromaDB indexing. `rag_api.py` exposes the query experience,
+and `frontend/index.html` renders answers and sources. The current API starts
+with its bundled sample corpus; connect `src.ingest` output to
+`src.embeddings.index_chunks_verified` when indexing a new corpus.
+
+See [docs/e2e_demo.md](docs/e2e_demo.md) for a sample request, expected
+response, and the validation commands used for this sprint.
+
+## Verification
+
+Run the offline regression tests before delivery (this excludes the separate
+`test_stream.py` smoke script, which expects a running streaming server):
+
+```bash
+python -m unittest \
+      test_chat_history_manager \
+      test_chunking_strategies \
+      test_embeddings \
+      test_ingest \
+      test_prompt_templates \
+      test_rag_evaluation \
+      test_rag_pipeline \
+      test_retrieval_tuning \
+      test_similarity_search -v
+```
+
+For a live API smoke test:
+
+```bash
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/query \
+      -H "Content-Type: application/json" \
+      -d '{"question":"What was the Q4 portfolio return?"}'
+```
 
 ## Overview
 

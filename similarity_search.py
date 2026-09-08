@@ -181,6 +181,8 @@ class VectorCollection:
         min_score: float = float("-inf"),
     ) -> list[dict]:
         """Return filtered records sorted by cosine similarity."""
+        if top_k < 0:
+            raise ValueError("top_k must be non-negative")
         if metadata_filter:
             records = [
                 record for record in self._records
