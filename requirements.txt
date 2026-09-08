@@ -1,6 +1,7 @@
 openai==1.35.14
 chromadb==0.5.3
 python-dotenv==1.0.1
+tiktoken==0.7.0
 
 # Document loading — GY3.19
 pypdf==4.2.0
