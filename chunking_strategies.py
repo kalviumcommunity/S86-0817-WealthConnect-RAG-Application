@@ -3,6 +3,13 @@ def chunk_by_fixed_size(text: str, chunk_size: int = 150, overlap: int = 30) -> 
     Strategy 1: Fixed-size chunking with overlap.
     Splits text strictly by character count, ensuring context carries over via overlap.
     """
+    if chunk_size < 1:
+        raise ValueError("chunk_size must be positive")
+    if overlap < 0 or overlap >= chunk_size:
+        raise ValueError("overlap must be non-negative and smaller than chunk_size")
+    if not text.strip():
+        return []
+
     chunks = []
     start = 0
     while start < len(text):
@@ -17,8 +24,7 @@ def chunk_by_paragraph(text: str) -> list:
     Strategy 2: Paragraph chunking.
     Splits text by double newlines, keeping semantic blocks completely intact.
     """
-    # Split by one or more blank lines (using \n\n as standard paragraph delimiter)
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    paragraphs = [paragraph.strip() for paragraph in text.split("\n\n") if paragraph.strip()]
     return paragraphs
 
 
@@ -28,6 +34,23 @@ def compute_stats(chunks: list) -> dict:
         return {"count": 0, "avg_size": 0}
     avg_size = sum(len(c) for c in chunks) / len(chunks)
     return {"count": len(chunks), "avg_size": round(avg_size, 2)}
+
+
+def compare_strategies(
+    text: str,
+    chunk_size: int = 150,
+    overlap: int = 30,
+) -> dict[str, dict]:
+    """Return chunks and size statistics for each supported strategy."""
+    fixed_chunks = chunk_by_fixed_size(text, chunk_size, overlap)
+    paragraph_chunks = chunk_by_paragraph(text)
+    return {
+        "fixed": {"chunks": fixed_chunks, "stats": compute_stats(fixed_chunks)},
+        "paragraph": {
+            "chunks": paragraph_chunks,
+            "stats": compute_stats(paragraph_chunks),
+        },
+    }
 
 
 def write_results_to_file(filename: str, document: str, fixed_chunks: list, para_chunks: list):
@@ -76,8 +99,9 @@ def main():
     )
 
     # Task 1 & 2: Compare two strategies
-    fixed_chunks = chunk_by_fixed_size(sample_document)
-    para_chunks = chunk_by_paragraph(sample_document)
+    comparison = compare_strategies(sample_document)
+    fixed_chunks = comparison["fixed"]["chunks"]
+    para_chunks = comparison["paragraph"]["chunks"]
     
     # Write to file and print summary
     write_results_to_file("chunking_results.txt", sample_document, fixed_chunks, para_chunks)
