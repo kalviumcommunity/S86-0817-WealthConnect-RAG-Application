@@ -43,4 +43,6 @@ Thumbs.db
 .ipynb_checkpoints/
 
 # Logs
+logs/
+!logs/.gitkeep
 *.log

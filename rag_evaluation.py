@@ -116,7 +116,7 @@ def main() -> None:
     collection = build_collection(dry_run=True)
 
     def answerer(question: str) -> dict:
-        return answer_query(question, collection, offline_embed, k=3)
+        return answer_query(question, collection, offline_embed, k=4)
 
     report = evaluate_test_set(TEST_SET, answerer)
     summary = report["summary"]

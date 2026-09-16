@@ -5,16 +5,16 @@ GY3.28 - Batch Embedding & Rate/Cost Management
 --- RUN SUMMARY ---
   model                       : text-embedding-3-small
   total_chunks                : 12
-  skipped_existing            : 0
-  pending                     : 12
-  embedded                    : 12
+  skipped_existing            : 12
+  pending                     : 0
+  embedded                    : 0
   failed                      : 0
-  input_tokens_estimated      : 272
-  batches_processed           : 1
-  estimated_cost_usd          : 5.44e-06
+  input_tokens_estimated      : 0
+  batches_processed           : 0
+  estimated_cost_usd          : 0.0
 
   Price per 1K tokens (USD) : $2e-05
-  Estimated total cost (USD): $0.00000544
+  Estimated total cost (USD): $0.00000000
 
 --- EMBEDDING STORE (first 8 dims shown) ---
 

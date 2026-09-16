@@ -1,15 +1,45 @@
-import tiktoken
+try:
+    import tiktoken
+except ImportError:
+    tiktoken = None
+
+_ENCODING_CACHE = {}
+
+def _get_encoding(model: str = "gpt-4o"):
+    if tiktoken is None:
+        return None
+    if model in _ENCODING_CACHE:
+        return _ENCODING_CACHE[model]
+    try:
+        enc = tiktoken.encoding_for_model(model)
+        _ENCODING_CACHE[model] = enc
+        return enc
+    except Exception:
+        try:
+            enc = tiktoken.get_encoding("cl100k_base")
+            _ENCODING_CACHE[model] = enc
+            return enc
+        except Exception:
+            return None
 
 
 def count_tokens(messages: list, model: str = "gpt-4o") -> int:
     """Counts tokens in a list of messages."""
-    encoding = tiktoken.encoding_for_model(model)
+    enc = _get_encoding(model)
     num_tokens = 0
     for message in messages:
         # Every message follows <im_start>{role/name}\n{content}<im_end>\n
         num_tokens += 4
         for key, value in message.items():
-            num_tokens += len(encoding.encode(str(value)))
+            text_val = str(value)
+            if enc is not None:
+                try:
+                    num_tokens += len(enc.encode(text_val))
+                    continue
+                except Exception:
+                    pass
+            # Robust fallback: ~1 token per 4 characters / 0.75 words
+            num_tokens += max(1, len(text_val.split()) * 4 // 3)
     num_tokens += 2 # every reply is primed with <im_start>assistant
     return num_tokens
 

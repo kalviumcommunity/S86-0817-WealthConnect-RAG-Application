@@ -29,6 +29,12 @@ Run with:
 """
 
 import os
+import sys
+from pathlib import Path
+
+# Support running directly as script (python src/parameter_experiments.py) or as module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -46,10 +52,11 @@ from src.model_params import (
 
 load_dotenv()
 
+_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(
     base_url=os.getenv("OPENAI_BASE_URL"),
-    api_key=os.getenv("OPENAI_API_KEY"),
-)
+    api_key=_api_key,
+) if _api_key else None
 CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
 
 DIVIDER = "=" * 70
@@ -288,14 +295,19 @@ if __name__ == "__main__":
     print("  WealthConnect RAG — Parameter Experiment Runner")
     print(f"{'#' * 70}")
 
-    experiment_1_temperature()
-    experiment_2_max_tokens()
-    experiment_3_stop_sequences()
-    experiment_4_top_p_vs_temperature()
-    experiment_5_production_presets()
+    if not client:
+        print("  [INFO] OPENAI_API_KEY is not configured in .env.")
+        print("  Set OPENAI_API_KEY in .env to run live API parameter experiments.")
+        print("  Skipping network calls cleanly (zero-error guarantee).\n")
+    else:
+        experiment_1_temperature()
+        experiment_2_max_tokens()
+        experiment_3_stop_sequences()
+        experiment_4_top_p_vs_temperature()
+        experiment_5_production_presets()
 
     print(f"\n{'#' * 70}")
-    print("  All experiments complete.")
+    print("  Parameter experiment checks complete.")
     print(f"  Recommended production setting: RAG_GROUNDED preset")
     print(f"  temperature=0.0  max_tokens=400  top_p=1.0  stop=none")
     print(f"{'#' * 70}\n")

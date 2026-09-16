@@ -1,73 +1,69 @@
-"""Quick test script for the streaming endpoint."""
-import urllib.request
+"""Unit and integration test for the streaming endpoint using TestClient."""
 import json
+import unittest
+from fastapi.testclient import TestClient
 
-BASE = "http://localhost:8002"
+from streaming_api import app
 
-# Health check
-req = urllib.request.Request(BASE + "/health")
-with urllib.request.urlopen(req) as r:
-    h = json.loads(r.read())
-print("=== GET /health ===")
-print(json.dumps(h, indent=2))
 
-# Stream test
-payload = json.dumps({"question": "What was the Q4 portfolio return?"}).encode()
-req = urllib.request.Request(
-    BASE + "/query/stream",
-    data=payload,
-    headers={"Content-Type": "application/json"},
-    method="POST",
-)
+class StreamingApiTests(unittest.TestCase):
+    def setUp(self):
+        self.client = TestClient(app)
 
-print("\n=== POST /query/stream ===")
-token_count = 0
-full_answer = ""
+    def test_health_endpoint(self):
+        response = self.client.get("/health")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "ok")
+        self.assertTrue(data.get("streaming", False))
+        self.assertGreater(data.get("chunks", 0), 0)
 
-with urllib.request.urlopen(req) as r:
-    for raw in r:
-        line = raw.decode("utf-8").rstrip()
-        if not line.startswith("data: "):
-            continue
-        ev = json.loads(line[6:])
+    def test_stream_valid_query(self):
+        response = self.client.post(
+            "/query/stream",
+            json={"question": "What was the Q4 portfolio return?"},
+        )
+        self.assertEqual(response.status_code, 200)
 
-        if ev["type"] == "citations":
-            num_sources = len(ev["sources"])
-            print(f"[citations] {num_sources} source(s):")
-            for s in ev["sources"]:
-                print(f"  {s['label']} {s['document']}  chunk_id={s['chunk_id']}")
+        events = []
+        for line in response.iter_lines():
+            if line.startswith("data: "):
+                events.append(json.loads(line[6:]))
 
-        elif ev["type"] == "token":
-            token_count += 1
-            full_answer += ev["text"]
+        event_types = [e.get("type") for e in events]
+        self.assertIn("citations", event_types)
+        self.assertIn("token", event_types)
+        self.assertIn("done", event_types)
 
-        elif ev["type"] == "done":
-            print(f"[done] received {token_count} token(s)")
-            print(f"[answer] {full_answer.strip()}")
-            break
+        # Check citations
+        citations_event = next(e for e in events if e.get("type") == "citations")
+        self.assertGreater(len(citations_event.get("sources", [])), 0)
 
-        elif ev["type"] == "error":
-            print(f"[error] {ev['message']}")
-            break
+        # Check full reconstructed answer
+        tokens = [e["text"] for e in events if e.get("type") == "token"]
+        full_text = "".join(tokens)
+        self.assertIn("q4", full_text.lower())
 
-# Refusal test
-print("\n=== POST /query/stream (should refuse) ===")
-payload2 = json.dumps({"question": "What is the capital of France?"}).encode()
-req2 = urllib.request.Request(
-    BASE + "/query/stream",
-    data=payload2,
-    headers={"Content-Type": "application/json"},
-    method="POST",
-)
+    def test_stream_refusal_for_unrelated_query(self):
+        response = self.client.post(
+            "/query/stream",
+            json={"question": "What is the capital of France?"},
+        )
+        self.assertEqual(response.status_code, 200)
 
-with urllib.request.urlopen(req2) as r:
-    for raw in r:
-        line = raw.decode("utf-8").rstrip()
-        if not line.startswith("data: "):
-            continue
-        ev = json.loads(line[6:])
-        if ev["type"] == "token":
-            print(f"[refusal text] {ev['text'][:80]}...")
-        elif ev["type"] == "done":
-            print("[done]")
-            break
+        events = []
+        for line in response.iter_lines():
+            if line.startswith("data: "):
+                events.append(json.loads(line[6:]))
+
+        event_types = [e.get("type") for e in events]
+        self.assertIn("token", event_types)
+        self.assertIn("done", event_types)
+
+        tokens = [e["text"] for e in events if e.get("type") == "token"]
+        full_text = "".join(tokens)
+        self.assertIn("don't have enough reliable context", full_text)
+
+
+if __name__ == "__main__":
+    unittest.main()

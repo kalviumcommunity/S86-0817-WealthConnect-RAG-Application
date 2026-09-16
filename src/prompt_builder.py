@@ -31,10 +31,11 @@ load_dotenv()
 # Client — credentials from .env, never hard-coded
 # ---------------------------------------------------------------------------
 
+_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(
     base_url=os.getenv("OPENAI_BASE_URL"),
-    api_key=os.getenv("OPENAI_API_KEY"),
-)
+    api_key=_api_key,
+) if _api_key else None
 
 CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
 PROMPTS_DIR = Path("prompts")

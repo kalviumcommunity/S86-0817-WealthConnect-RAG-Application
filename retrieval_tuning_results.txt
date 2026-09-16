@@ -1,0 +1,7 @@
+Retrieval Relevance Tuning
+==============================
+baseline_k1: hit_rate=0.75 (3/4)
+baseline_k3: hit_rate=1.00 (4/4)
+filtered_k3: hit_rate=0.50 (2/4)
+Selected setting: baseline_k3
+Selection basis: highest measured hit rate; ties prefer smaller k.

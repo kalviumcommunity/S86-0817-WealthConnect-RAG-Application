@@ -4,7 +4,7 @@ GY3.29 — Embedding Quality Checks & Sanity Tests
 
 Model   : text-embedding-3-small
 Corpus  : 13 chunks across 3 sources + 2 noise chunks
-Tests   : 8  |  Passed: 7  |  Failed: 1
+Tests   : 8  |  Passed: 6  |  Failed: 2
 
 -----------------------------------------------------------------
 DETAILED RESULTS
@@ -13,56 +13,56 @@ DETAILED RESULTS
 Test 1: [PASS]  Direct password reset question → policies.md
   Query          : How can I reset my WealthConnect password?
   Expected source: policies.md
-  Top source     : policies.md  (score: 0.107409)
-  Top text       : Account recovery requires identity verification via registered email o...
+  Top source     : policies.md  (score: 0.126891)
+  Top text       : Two-factor authentication is mandatory for all premium account holders...
   Expected rank  : #1 in ranked list
 
 Test 2: [PASS]  Q4 return question → earnings report
   Query          : What was the Q4 portfolio return?
   Expected source: q4_earnings_report.pdf
-  Top source     : q4_earnings_report.pdf  (score: 0.084042)
-  Top text       : Our core aggressive growth fund yielded a 12% return in Q4, driven by ...
+  Top source     : q4_earnings_report.pdf  (score: 0.095565)
+  Top text       : We project interest rate stabilisation next year and recommend rebalan...
   Expected rank  : #1 in ranked list
 
 Test 3: [PASS]  Refund question → policies.md
   Query          : How do I request a refund?
   Expected source: policies.md
-  Top source     : policies.md  (score: 0.056261)
+  Top source     : policies.md  (score: 0.065077)
   Top text       : All refund requests must be submitted within 30 days of the original t...
   Expected rank  : #1 in ranked list
 
 Test 4: [PASS]  Fund performance → earnings report
   Query          : Which fund performed best in Q4?
   Expected source: q4_earnings_report.pdf
-  Top source     : q4_earnings_report.pdf  (score: 0.083475)
+  Top source     : q4_earnings_report.pdf  (score: 0.10156)
   Top text       : Our core aggressive growth fund yielded a 12% return in Q4, driven by ...
   Expected rank  : #1 in ranked list
 
-Test 5: [PASS]  Platform overview question → about.html
+Test 5: [FAIL]  Platform overview question → about.html
   Query          : What is WealthConnect?
   Expected source: about.html
-  Top source     : about.html  (score: 0.105444)
-  Top text       : Our RAG assistant answers financial questions with cited, up-to-date s...
-  Expected rank  : #1 in ranked list
+  Top source     : q4_earnings_report.pdf  (score: 0.118644)
+  Top text       : Customer acquisition costs dropped by $15 per head after deploying the...
+  Expected rank  : #2 in ranked list
 
 Test 6: [PASS]  Different wording for password reset — tests semantic matching
   Query          : Steps to recover access to my login credentials
   Expected source: policies.md
-  Top source     : policies.md  (score: 0.123119)
-  Top text       : To reset your WealthConnect password, visit the login page and select ...
+  Top source     : policies.md  (score: 0.100356)
+  Top text       : Two-factor authentication is mandatory for all premium account holders...
   Expected rank  : #1 in ranked list
 
 Test 7: [FAIL]  Indirect automation query — should find operations section
   Query          : How has automation improved customer support efficiency?
   Expected source: q4_earnings_report.pdf
-  Top source     : noise.txt  (score: 0.145874)
+  Top source     : noise.txt  (score: 0.111605)
   Top text       : The cafeteria menu has pasta and salad today.
-  Expected rank  : #3 in ranked list
+  Expected rank  : #4 in ranked list
 
 Test 8: [PASS]  Unrelated text — top result should be the noise chunk (interesting case)
   Query          : The cafeteria menu has pasta and salad today
   Expected source: noise.txt
-  Top source     : noise.txt  (score: 0.104643)
+  Top source     : noise.txt  (score: 0.108009)
   Top text       : The cafeteria menu has pasta and salad today.
   Expected rank  : #1 in ranked list
 
@@ -70,9 +70,9 @@ Test 8: [PASS]  Unrelated text — top result should be the noise chunk (interes
 SUMMARY
 -----------------------------------------------------------------
   Tests run : 8
-  Passed    : 7
-  Failed    : 1
-  Pass rate : 87.5%
+  Passed    : 6
+  Failed    : 2
+  Pass rate : 75.0%
 
 -----------------------------------------------------------------
 INTERESTING / SURPRISING CASES

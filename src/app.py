@@ -13,6 +13,12 @@ Secrets are loaded from .env via python-dotenv — never hard-coded here.
 """
 
 import os
+import sys
+from pathlib import Path
+
+# Support running directly as script or as module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -26,10 +32,11 @@ load_dotenv()
 # Client — credentials from environment, not source code
 # ---------------------------------------------------------------------------
 
+_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(
     base_url=os.getenv("OPENAI_BASE_URL"),
-    api_key=os.getenv("OPENAI_API_KEY"),
-)
+    api_key=_api_key,
+) if _api_key else None
 
 CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
 
@@ -149,17 +156,28 @@ def print_response(result: dict) -> None:
 
 
 if __name__ == "__main__":
-    sample_question = "What are the tax implications of the ABC Investment Product?"
+    if not _api_key:
+        print("\n" + "=" * 60)
+        print("  WealthConnect RAG — Console Application (Sprint 2)")
+        print("=" * 60)
+        print("  [INFO] OPENAI_API_KEY is not configured in .env.")
+        print("  To query the RAG pipeline with live LLM generation:")
+        print("    1. Add your OPENAI_API_KEY in .env")
+        print("    2. Run: python -m src.app")
+        print("  (Offline tests & evaluation suite can run with: python -m unittest)")
+        print("=" * 60 + "\n")
+    else:
+        sample_question = "What are the tax implications of the ABC Investment Product?"
 
-    # Smoke-test: strict variant with production grounded preset
-    result = ask(sample_question, prompt_variant="strict")
-    print_response(result)
+        # Smoke-test: strict variant with production grounded preset
+        result = ask(sample_question, prompt_variant="strict")
+        print_response(result)
 
-    # Smoke-test: json variant with json preset
-    result = ask(sample_question, prompt_variant="json")
-    print_response(result)
+        # Smoke-test: json variant with json preset
+        result = ask(sample_question, prompt_variant="json")
+        print_response(result)
 
-    # Smoke-test: concise variant with a custom tight preset
-    from src.model_params import RAG_STRICT
-    result = ask(sample_question, prompt_variant="concise", params=RAG_STRICT)
-    print_response(result)
+        # Smoke-test: concise variant with a custom tight preset
+        from src.model_params import RAG_STRICT
+        result = ask(sample_question, prompt_variant="concise", params=RAG_STRICT)
+        print_response(result)

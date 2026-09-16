@@ -10,11 +10,15 @@ Demonstrates:
 """
 
 import os
+import sys
 import json
 import time
 import hashlib
 from dotenv import load_dotenv
 from openai import OpenAI, RateLimitError, APIConnectionError, APIStatusError
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 load_dotenv()
 

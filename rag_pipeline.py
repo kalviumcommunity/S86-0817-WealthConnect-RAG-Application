@@ -96,8 +96,7 @@ def generate_answer(
     if "Context:\n" in context:
         context = context.split("Context:\n", 1)[1]
         context = context.split("\n\nQuestion:", 1)[0]
-    first_evidence = context.split("\n\n---", 1)[0]
-    return f"Based on the provided context: {first_evidence}"
+    return f"Based on the provided context: {context.strip()}"
 
 
 def answer_query(

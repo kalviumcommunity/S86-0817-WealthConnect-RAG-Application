@@ -26,6 +26,12 @@ Run with:
 """
 
 import os
+import sys
+from pathlib import Path
+
+# Support running directly as script (python src/prompt_experiments.py) or as module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import json
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -40,10 +46,11 @@ from src.prompt_builder import (
 
 load_dotenv()
 
+_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(
     base_url=os.getenv("OPENAI_BASE_URL"),
-    api_key=os.getenv("OPENAI_API_KEY"),
-)
+    api_key=_api_key,
+) if _api_key else None
 CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
 
 # ---------------------------------------------------------------------------
@@ -247,11 +254,16 @@ if __name__ == "__main__":
     print("  WealthConnect RAG — Experiment Runner")
     print(f"{'#' * 70}")
 
-    experiment_1_role_separation()
-    experiment_2_prompt_variants()
-    experiment_3_ambiguous_vs_clear()
-    experiment_4_fallback_behaviour()
+    if not client:
+        print("  [INFO] OPENAI_API_KEY is not configured in .env.")
+        print("  Set OPENAI_API_KEY in .env to run live API prompt experiments.")
+        print("  Skipping network calls cleanly (zero-error guarantee).\n")
+    else:
+        experiment_1_role_separation()
+        experiment_2_prompt_variants()
+        experiment_3_ambiguous_vs_clear()
+        experiment_4_fallback_behaviour()
 
     print(f"\n{'#' * 70}")
-    print("  All experiments complete.")
+    print("  Prompt experiment checks complete.")
     print(f"{'#' * 70}\n")

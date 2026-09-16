@@ -3,439 +3,1930 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WealthConnect RAG Assistant</title>
+  <title>WealthConnect — AI-Powered Wealth Advisory Knowledge Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* ── Reset & base ── */
+    /* ── Reset & Core Theme ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0f1117;
-      --surface:   #1c1e26;
-      --border:    #2e3042;
-      --accent:    #4f8ef7;
-      --accent-dim:#2a4a8a;
-      --text:      #e2e4ed;
-      --muted:     #8b8fa8;
-      --success:   #3ecf8e;
-      --warning:   #f6c94e;
-      --danger:    #f05c5c;
-      --radius:    10px;
-      --mono:      'Menlo', 'Consolas', monospace;
+      --bg:           #090d16;
+      --surface:      #121826;
+      --surface-card: #192236;
+      --surface-hover:#222e48;
+      --border:       #26334d;
+      --border-focus: #3b82f6;
+      --accent:       #3b82f6;
+      --accent-hover: #2563eb;
+      --emerald:      #10b981;
+      --emerald-bg:   rgba(16, 185, 129, 0.12);
+      --text:         #f8fafc;
+      --text-muted:   #94a3b8;
+      --text-dim:     #64748b;
+      --warning:      #f59e0b;
+      --warning-bg:   rgba(245, 158, 11, 0.12);
+      --danger:       #ef4444;
+      --danger-bg:    rgba(239, 68, 68, 0.12);
+      --radius-sm:    6px;
+      --radius:       12px;
+      --radius-lg:    16px;
+      --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-md:    0 8px 24px rgba(0, 0, 0, 0.4);
+      --font-main:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
     }
+
+    [hidden] { display: none !important; }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
-      font-size: 15px;
+      font-family: var(--font-main);
+      font-size: 14.5px;
       line-height: 1.6;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 32px 16px 64px;
+      padding: 20px 16px 60px;
     }
 
-    /* ── Layout ── */
-    .container { width: 100%; max-width: 760px; }
-
-    header {
-      text-align: center;
-      margin-bottom: 36px;
+    .app-container {
+      width: 100%;
+      max-width: 1200px;
     }
-    header h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--accent);
-    }
-    header p { color: var(--muted); margin-top: 6px; font-size: 0.9rem; }
 
-    /* ── Input area ── */
-    .input-row {
+    /* ── Top Bar ── */
+    .top-bar {
       display: flex;
-      gap: 10px;
-      margin-bottom: 28px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 14px;
     }
-    .input-row input {
-      flex: 1;
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      font-size: 18px;
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-sub {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* ── Persona Switcher ── */
+    .persona-switcher {
+      display: flex;
       background: var(--surface);
       border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      font-size: 15px;
-      outline: none;
-      transition: border-color 0.2s;
+      border-radius: 9999px;
+      padding: 4px;
+      gap: 4px;
     }
-    .input-row input:focus { border-color: var(--accent); }
-    .input-row input:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .btn {
-      background: var(--accent);
-      color: #fff;
+    .persona-btn {
+      background: transparent;
       border: none;
-      border-radius: var(--radius);
-      padding: 12px 22px;
-      font-size: 15px;
+      color: var(--text-muted);
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 0.84rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
     }
-    .btn:hover:not(:disabled) { background: #3a7ae0; }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-retry {
-      background: transparent;
-      border: 1px solid var(--danger);
-      color: var(--danger);
-      margin-top: 12px;
-    }
-    .btn-retry:hover:not(:disabled) { background: rgba(240,92,92,0.1); }
 
-    /* ── Status bar ── */
-    .status-bar {
+    .persona-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35);
+    }
+
+    .persona-btn:hover:not(.active) {
+      color: var(--text);
+      background: var(--surface-hover);
+    }
+
+    /* ── User Session Badge & Controls ── */
+    .user-session-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+    }
+
+    .user-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .role-badge-tag {
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+    .role-badge-tag.rm {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+    .role-badge-tag.admin {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 9999px;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-logout:hover {
+      background: var(--danger-bg);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .telemetry-group {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.82rem;
-      color: var(--muted);
-      margin-bottom: 14px;
-      min-height: 20px;
-    }
-    .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-      flex-shrink: 0;
-    }
-    .dot.streaming { background: var(--success); animation: pulse 1s infinite; }
-    .dot.error     { background: var(--danger); }
-    .dot.done      { background: var(--success); animation: none; }
-
-    @keyframes pulse {
-      0%,100% { opacity: 1; }
-      50%      { opacity: 0.3; }
-    }
-
-    /* ── Answer card ── */
-    .answer-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px 24px;
-      margin-bottom: 20px;
-      min-height: 60px;
-      position: relative;
-    }
-    .answer-card .label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-    .answer-text {
-      white-space: pre-wrap;
-      word-break: break-word;
-      line-height: 1.75;
-    }
-    .cursor {
-      display: inline-block;
-      width: 2px; height: 1em;
-      background: var(--accent);
-      animation: blink 0.8s step-end infinite;
-      vertical-align: text-bottom;
-      margin-left: 2px;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-    /* ── Incomplete badge ── */
-    .incomplete-badge {
-      display: inline-block;
-      background: rgba(246,201,78,0.15);
-      color: var(--warning);
-      border: 1px solid var(--warning);
-      border-radius: 4px;
-      font-size: 0.75rem;
-      padding: 2px 8px;
-      margin-top: 10px;
-    }
-
-    /* ── Error box ── */
-    .error-box {
-      background: rgba(240,92,92,0.08);
-      border: 1px solid var(--danger);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      color: var(--danger);
-      margin-bottom: 20px;
-    }
-    .error-box p { margin-bottom: 8px; }
-
-    /* ── Citations ── */
-    .citations-section { margin-bottom: 20px; }
-    .citations-section h2 {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-
-    details {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 8px;
-      overflow: hidden;
-    }
-    summary {
-      cursor: pointer;
-      padding: 12px 16px;
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      list-style: none;
-      user-select: none;
-      transition: background 0.15s;
-    }
-    summary:hover { background: rgba(79,142,247,0.06); }
-    summary::-webkit-details-marker { display: none; }
-
-    .citation-label {
-      background: var(--accent-dim);
-      color: var(--accent);
-      border-radius: 4px;
       font-size: 0.78rem;
-      font-weight: 700;
-      padding: 1px 7px;
-      flex-shrink: 0;
-      font-family: var(--mono);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      flex-wrap: wrap;
     }
-    .citation-meta {
+
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald);
+    }
+
+    /* ── Compliance Banner (PRD Section 17.1) ── */
+    .compliance-banner {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.82rem;
+      color: #93c5fd;
+    }
+    .compliance-banner strong { color: #fff; }
+
+    /* ── Layout Grid for RM Workspace ── */
+    .rm-layout {
+      display: grid;
+      grid-template-columns: 1fr 310px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .rm-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Query Box ── */
+    .query-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .query-card:focus-within {
+      border-color: var(--border-focus);
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 10px;
+    }
+
+    .query-input {
       flex: 1;
-      font-size: 0.85rem;
+      background: transparent;
+      border: none;
       color: var(--text);
+      font-size: 1rem;
+      padding: 8px 12px;
+      outline: none;
+      font-family: inherit;
     }
-    .citation-meta .doc { font-weight: 600; }
-    .citation-meta .chunk-id { color: var(--muted); font-size: 0.78rem; font-family: var(--mono); }
-    .citation-score {
-      font-size: 0.75rem;
-      color: var(--muted);
-      font-family: var(--mono);
-      flex-shrink: 0;
-    }
+    .query-input::placeholder { color: var(--text-dim); }
 
-    .citation-body {
-      padding: 0 16px 14px 16px;
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 22px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      padding-top: 12px;
       border-top: 1px solid var(--border);
-      font-size: 0.88rem;
-      color: var(--muted);
-      line-height: 1.7;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 10px;
     }
-    .citation-body p { padding-top: 12px; }
 
-    /* ── Empty state ── */
-    .empty-state {
-      text-align: center;
-      color: var(--muted);
-      padding: 48px 0;
-      font-size: 0.9rem;
+    .toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
     }
-    .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .toggle-label input { cursor: pointer; accent-color: var(--accent); }
 
     /* ── Suggestions ── */
     .suggestions {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      justify-content: center;
-      margin-top: 20px;
+      margin-bottom: 20px;
     }
-    .suggestion-btn {
+
+    .sug-chip {
       background: var(--surface);
       border: 1px solid var(--border);
-      color: var(--muted);
-      border-radius: 20px;
-      padding: 7px 14px;
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sug-chip:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    /* ── Status Bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      min-height: 22px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+    .pulse-dot.streaming { background: var(--accent); animation: pulse 0.8s infinite; }
+    .pulse-dot.done      { background: var(--emerald); }
+    .pulse-dot.refused   { background: var(--warning); }
+    .pulse-dot.error     { background: var(--danger); }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.4; }
+    }
+
+    /* ── Refusal Banner ── */
+    .refusal-banner {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .refusal-icon { font-size: 1.3rem; line-height: 1; color: var(--warning); }
+    .refusal-title { font-weight: 600; color: #fde68a; margin-bottom: 4px; }
+    .refusal-desc { font-size: 0.9rem; color: #fef3c7; line-height: 1.5; }
+
+    /* ── Answer Card ── */
+    .answer-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+
+    .answer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .answer-body {
+      font-size: 1.02rem;
+      line-height: 1.75;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .citation-badge {
+      display: inline-block;
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.45);
+      border-radius: 4px;
+      padding: 0 6px;
+      margin: 0 2px;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .citation-badge:hover {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background: var(--accent);
+      animation: blink 0.8s infinite;
+      vertical-align: text-bottom;
+      margin-left: 2px;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ── Feedback Bar ── */
+    .feedback-bar {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .feedback-prompt {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .feedback-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-feedback {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
       font-size: 0.82rem;
       cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
     }
-    .suggestion-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-feedback:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    .btn-feedback.active-helpful {
+      background: var(--emerald-bg);
+      border-color: var(--emerald);
+      color: var(--emerald);
+    }
+    .btn-feedback.active-not-helpful {
+      background: var(--danger-bg);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .feedback-comment-box {
+      width: 100%;
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+    }
+    .feedback-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 0.82rem;
+      padding: 6px 10px;
+      outline: none;
+    }
+    .btn-feedback-submit {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ── Citations Inspector ── */
+    .citations-panel { margin-bottom: 24px; }
+    .citations-heading {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .citation-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .citation-card:hover { border-color: var(--border-focus); }
+
+    .citation-header {
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      gap: 12px;
+    }
+
+    .citation-lead {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .citation-pill {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .version-tag {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+    }
+
+    .category-tag {
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.74rem;
+    }
+
+    .citation-title { font-weight: 600; font-size: 0.9rem; }
+    .citation-section { font-size: 0.82rem; color: var(--text-muted); }
+    .citation-score { font-size: 0.76rem; font-family: var(--font-mono); color: var(--text-dim); }
+
+    .citation-content {
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.22);
+      font-size: 0.86rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    /* ── Recent Questions Sidebar ── */
+    .sidebar-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-clear-history {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .btn-clear-history:hover { color: var(--danger); }
+
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 440px;
+      overflow-y: auto;
+    }
+
+    .recent-item {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+    }
+    .recent-item:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    .recent-time {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      display: block;
+      margin-top: 4px;
+      font-family: var(--font-mono);
+    }
+
+    /* ── Admin Dashboard Views ── */
+    .admin-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .admin-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .admin-tab-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-tab-btn.active {
+      background: var(--surface-card);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Stat Cards Grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .stat-val {
+      font-size: 1.7rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      margin-top: 4px;
+      color: var(--text);
+    }
+    .stat-lbl {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Admin Tables ── */
+    .admin-table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .table-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      text-align: left;
+    }
+    .data-table th {
+      padding: 10px 12px;
+      background: var(--surface-card);
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .data-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .data-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+    .status-badge.approved {
+      background: var(--emerald-bg);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-badge.draft {
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .status-badge.superseded {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-action {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.76rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-action:hover {
+      background: var(--surface-hover);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .btn-action.danger:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    /* ── Authentication Gateway Modal Overlay ── */
+    .auth-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at top, #141c2e, #060911);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 2000;
+    }
+
+    .auth-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+
+    .auth-brand-badge {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #3b82f6, #10b981);
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 24px;
+      color: #fff;
+      box-shadow: 0 0 24px rgba(59, 130, 246, 0.45);
+      margin-bottom: 16px;
+    }
+
+    .auth-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .auth-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .auth-form {
+      text-align: left;
+    }
+
+    .demo-logins-box {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .demo-logins-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .demo-btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .btn-demo-login {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      transition: all 0.2s;
+    }
+    .btn-demo-login:hover {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .btn-demo-login small {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    .auth-hint {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 0.74rem;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    .auth-error {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.84rem;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    /* ── Modal (Upload Document) ── */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+    .modal-overlay.active { display: flex !important; }
+
+    .modal-card {
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-title { font-size: 1.2rem; font-weight: 700; }
+    .btn-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 1.4rem;
+      line-height: 1;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .form-group select, .form-group input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .upload-toast {
+      background: var(--emerald-bg);
+      border: 1px solid var(--emerald);
+      color: #a7f3d0;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      margin-top: 16px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-dim);
+      font-size: 0.78rem;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .team-badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
-<div class="container">
 
-  <header>
-    <h1>WealthConnect RAG Assistant</h1>
-    <p>Ask questions about policies, portfolio performance, and platform features.</p>
-  </header>
+<!-- ===================================================================== -->
+<!-- AUTHENTICATION GATEWAY MODAL (SHOWN WHEN LOGGED OUT)                 -->
+<!-- ===================================================================== -->
+<div class="auth-overlay" id="authGatewayOverlay" hidden>
+  <div class="auth-card">
+    <div class="auth-brand-badge">W</div>
+    <h2 class="auth-title">WealthConnect</h2>
+    <p class="auth-subtitle">AI-Powered Wealth Advisory Knowledge Assistant</p>
 
-  <!-- Input -->
-  <div class="input-row">
-    <input
-      id="questionInput"
-      type="text"
-      placeholder="e.g. What was the Q4 portfolio return?"
-      aria-label="Question"
-      autocomplete="off"
-    />
-    <button class="btn" id="askBtn" onclick="handleAsk()">Ask</button>
+    <div id="authErrorAlert" class="auth-error" hidden></div>
+
+    <form class="auth-form" onsubmit="handleManualLogin(event)">
+      <div class="form-group">
+        <label>Role Username or ID</label>
+        <input
+          type="text"
+          id="authUsernameInput"
+          placeholder="e.g. rm_advisor or wealth_admin"
+          required
+          autocomplete="username"
+        />
+      </div>
+      <div class="form-group">
+        <label>Security Password</label>
+        <input
+          type="password"
+          id="authPasswordInput"
+          placeholder="Enter password"
+          required
+          autocomplete="current-password"
+        />
+      </div>
+      <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;" id="btnLoginSubmit">
+        Authenticate & Access Portal →
+      </button>
+    </form>
+
+    <!-- One-Click Demo Role Logins -->
+    <div class="demo-logins-box">
+      <div class="demo-logins-title">⚡ Instant Role Sign-In</div>
+      <div class="demo-btn-group">
+        <button class="btn-demo-login" onclick="quickLogin('rm_advisor', 'Password@123')">
+          <span>💼 RM Advisor</span>
+          <small>G Yashmieen</small>
+        </button>
+        <button class="btn-demo-login" onclick="quickLogin('wealth_admin', 'Admin@123')">
+          <span>🛡️ Wealth Admin</span>
+          <small>Dodla Bhanu Teja Reddy</small>
+        </button>
+      </div>
+      <div class="auth-hint">
+        <strong>Demo Credentials:</strong><br>
+        • <strong>Relationship Manager:</strong> <code>rm_advisor</code> / <code>Password@123</code><br>
+        • <strong>Wealth Admin:</strong> <code>wealth_admin</code> / <code>Admin@123</code>
+      </div>
+    </div>
   </div>
+</div>
 
-  <!-- Status bar -->
-  <div class="status-bar" id="statusBar" aria-live="polite">
-    <div class="dot" id="statusDot"></div>
-    <span id="statusText"></span>
-  </div>
+<!-- ===================================================================== -->
+<!-- MAIN APPLICATION CONTAINER (AUTHENTICATED)                            -->
+<!-- ===================================================================== -->
+<div class="app-container" id="appMainContainer">
 
-  <!-- Main output area -->
-  <main id="mainOutput">
-
-    <!-- Empty state -->
-    <div class="empty-state" id="emptyState">
-      <div class="icon">💬</div>
-      <p>Ask a question to get a grounded answer with source citations.</p>
-      <div class="suggestions">
-        <button class="suggestion-btn" onclick="prefill('What was the Q4 portfolio return?')">Q4 portfolio return?</button>
-        <button class="suggestion-btn" onclick="prefill('How do I reset my password?')">How to reset password?</button>
-        <button class="suggestion-btn" onclick="prefill('What is the refund policy?')">Refund policy?</button>
-        <button class="suggestion-btn" onclick="prefill('What is WealthConnect?')">What is WealthConnect?</button>
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="brand-group">
+      <div class="brand-logo">W</div>
+      <div>
+        <div class="brand-title">WealthConnect</div>
+        <div class="brand-sub">Enterprise Wealth Advisory Assistant</div>
       </div>
     </div>
 
-    <!-- Error box (hidden until error) -->
-    <div class="error-box" id="errorBox" hidden>
-      <p id="errorMsg"></p>
-      <button class="btn btn-retry" id="retryBtn" onclick="handleRetry()">Retry</button>
+    <!-- Dual Persona Switcher -->
+    <div class="persona-switcher">
+      <button id="btnRoleRM" class="persona-btn active" onclick="switchPersona('rm')">
+        <span>💼</span> Relationship Manager
+      </button>
+      <button id="btnRoleAdmin" class="persona-btn" onclick="switchPersona('admin')">
+        <span>🛡️</span> Wealth Admin
+      </button>
     </div>
 
-    <!-- Answer card (hidden until first token) -->
-    <div class="answer-card" id="answerCard" hidden>
-      <div class="label">Answer</div>
-      <div class="answer-text" id="answerText" aria-live="polite"></div>
-      <div id="incompleteBadge" hidden>
-        <span class="incomplete-badge">⚠ Stream interrupted — answer may be incomplete</span>
+    <!-- Logged-in User Pill & Logout -->
+    <div class="user-session-bar" id="userSessionBar">
+      <span class="user-pill" id="userPill">
+        <span>👤</span>
+        <span id="userNameDisplay">G Yashmieen</span>
+      </span>
+      <span class="role-badge-tag rm" id="userRoleTag">RM</span>
+      <button class="btn-logout" onclick="handleLogout()" title="Log out of WealthConnect">Log Out</button>
+    </div>
+
+    <!-- Telemetry Badges -->
+    <div class="telemetry-group">
+      <span class="badge" id="modelBadge">Model: gpt-4o-mini</span>
+      <span class="badge" id="chunksBadge"><span class="badge-dot"></span> KB: 16 chunks</span>
+      <span class="badge" id="cacheBadge">Cache: Ready</span>
+    </div>
+  </div>
+
+  <!-- Compliance Banner (PRD Section 17.1) -->
+  <div class="compliance-banner">
+    <div>
+      <strong>COMPLIANCE NOTICE:</strong> Answers are grounded strictly in approved investment policies, tax rules, and product brochures. Relationship Managers must verify advice against current customer suitability before external communication.
+    </div>
+    <div style="font-family: var(--font-mono); font-size: 0.75rem; white-space: nowrap;">FR-04 ENFORCED</div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 1: RELATIONSHIP MANAGER WORKSPACE                                 -->
+  <!-- ===================================================================== -->
+  <main id="rmView">
+    <div class="rm-layout">
+      
+      <!-- Primary Advisory Column -->
+      <div>
+        <!-- Query Card -->
+        <div class="query-card">
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="questionInput"
+              class="query-input"
+              placeholder="Ask a wealth management policy, asset allocation, or tax rule question..."
+              autocomplete="off"
+            />
+            <button id="askBtn" class="btn-primary" onclick="handleAsk()">
+              <span>Advise</span>
+              <span>→</span>
+            </button>
+          </div>
+          <div class="controls-row">
+            <label class="toggle-label">
+              <input type="checkbox" id="streamToggle" checked />
+              <span>Stream Responses (SSE)</span>
+            </label>
+            <span id="latencyDisplay" style="font-family: var(--font-mono);">Latency: —</span>
+          </div>
+        </div>
+
+        <!-- Suggestion Chips -->
+        <div class="suggestions">
+          <button class="sug-chip" onclick="prefill('Moderate Growth Fund asset allocation rules?')">Moderate Growth Allocation</button>
+          <button class="sug-chip" onclick="prefill('What was the Q4 portfolio return?')">Q4 Portfolio Return</button>
+          <button class="sug-chip" onclick="prefill('What is the tax exemption limit for capital gains?')">Capital Gains Tax Exemption</button>
+          <button class="sug-chip" onclick="prefill('Who is eligible for Premier Wealth Advisory?')">Premier Eligibility ($250k)</button>
+          <button class="sug-chip" onclick="prefill('What is the refund policy?')">Refund Policy</button>
+          <button class="sug-chip" onclick="prefill('What is the capital of France?')">⚠ Out of Scope Test</button>
+        </div>
+
+        <!-- Status Indicator -->
+        <div class="status-bar">
+          <div class="pulse-dot" id="statusDot"></div>
+          <span id="statusText">System connected to Approved Bank Knowledge Base</span>
+        </div>
+
+        <!-- Refusal Banner (Shown on weak retrieval or policy gaps) -->
+        <div class="refusal-banner" id="refusalBanner" hidden>
+          <div class="refusal-icon">⚠</div>
+          <div>
+            <div class="refusal-title">Advisory Guardrail Triggered: Ungrounded Context Withheld</div>
+            <div class="refusal-desc" id="refusalMessage">
+              The knowledge base does not contain approved documentation covering this specific question. Per bank governance, ungrounded answers are refused to prevent misinformation.
+            </div>
+          </div>
+        </div>
+
+        <!-- Answer Display Card -->
+        <div class="answer-card" id="answerCard" hidden>
+          <div class="answer-header">
+            <span>Grounded Advisory Answer</span>
+            <span id="cacheIndicator" style="color: var(--emerald);"></span>
+          </div>
+          <div class="answer-body" id="answerText"></div>
+
+          <!-- RM Feedback Widget (PRD Section 7 FR-08) -->
+          <div class="feedback-bar" id="feedbackBar">
+            <span class="feedback-prompt">Was this response helpful for client advisory?</span>
+            <div class="feedback-actions">
+              <button class="btn-feedback" id="btnHelpful" onclick="setFeedbackRating('helpful')">
+                👍 Helpful
+              </button>
+              <button class="btn-feedback" id="btnNotHelpful" onclick="setFeedbackRating('not_helpful')">
+                👎 Not Helpful
+              </button>
+            </div>
+            <!-- Optional Comment Expandable -->
+            <div class="feedback-comment-box" id="feedbackCommentBox" hidden>
+              <input
+                type="text"
+                id="feedbackCommentInput"
+                class="feedback-input"
+                placeholder="Optional feedback: add notes or flag missing policy context..."
+              />
+              <button class="btn-feedback-submit" onclick="submitFeedbackComment()">Submit</button>
+            </div>
+            <div id="feedbackToast" style="width: 100%; font-size: 0.78rem; color: var(--emerald); margin-top: 6px;" hidden>
+              ✓ Thank you! Advisory feedback recorded for governance audit.
+            </div>
+          </div>
+        </div>
+
+        <!-- Citations Inspector -->
+        <div class="citations-panel" id="citationsPanel" hidden>
+          <div class="citations-heading">
+            <span>Verified Source Evidence</span>
+            <span id="sourcesCount" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--emerald);">(0)</span>
+          </div>
+          <div id="citationList"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Recent Inquiries Sidebar -->
+      <aside>
+        <div class="sidebar-card">
+          <div class="sidebar-header">
+            <span class="sidebar-title"><span>🕒</span> Recent Questions</span>
+            <button class="btn-clear-history" onclick="clearRecentHistory()">Clear</button>
+          </div>
+          <div class="recent-list" id="recentList">
+            <div style="color: var(--text-dim); font-size: 0.8rem; text-align: center; padding: 12px 0;">
+              No recent questions yet.
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- VIEW 2: WEALTH ADMIN DASHBOARD (PRD SECTION 19)                       -->
+  <!-- ===================================================================== -->
+  <main id="adminView" class="admin-container" hidden>
+
+    <!-- Admin Sub-Navigation Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab-btn active" id="tabBtnDocs" onclick="switchAdminTab('docs')">
+        📁 Approved Documents Catalog
+      </button>
+      <button class="admin-tab-btn" id="tabBtnQuestions" onclick="switchAdminTab('questions')">
+        📊 Question Analytics & Policy Gaps
+      </button>
+      <button class="admin-tab-btn" id="tabBtnFeedback" onclick="switchAdminTab('feedback')">
+        💬 RM Feedback Review
+      </button>
+    </div>
+
+    <!-- SUB-TAB 1: APPROVED DOCUMENTS CATALOG -->
+    <div id="adminTabDocs">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-lbl">Total Documents</div>
+          <div class="stat-val" id="statTotalDocs">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Active / Approved</div>
+          <div class="stat-val" style="color: var(--emerald);" id="statApprovedDocs">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Draft Status</div>
+          <div class="stat-val" style="color: #60a5fa;" id="statDraftDocs">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Superseded (Archived)</div>
+          <div class="stat-val" style="color: var(--warning);" id="statSupersededDocs">—</div>
+        </div>
+      </div>
+
+      <div class="admin-table-card">
+        <div class="table-top">
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 700;">Approved Documents Catalog</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              Manage approved wealth division literature. Superseded and draft documents are automatically excluded from RM query retrieval (FR-04).
+            </p>
+          </div>
+          <button class="btn-primary" onclick="toggleUploadModal(true)">
+            + Upload Approved Document
+          </button>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Document Name & Title</th>
+              <th>Category</th>
+              <th>Product Scope</th>
+              <th>Version</th>
+              <th>Status</th>
+              <th>Chunks</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="documentsTableBody">
+            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading catalog...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- Citations (hidden until sources arrive) -->
-    <section class="citations-section" id="citationsSection" aria-label="Sources" hidden>
-      <h2>Sources</h2>
-      <div id="citationList"></div>
-    </section>
+    <!-- SUB-TAB 2: QUESTION ANALYTICS & POLICY GAPS -->
+    <div id="adminTabQuestions" hidden>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-lbl">Total Advisory Queries</div>
+          <div class="stat-val" id="statTotalQueries">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Answered With Citations</div>
+          <div class="stat-val" style="color: var(--emerald);" id="statAnsweredQueries">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Policy Gaps (Unanswered)</div>
+          <div class="stat-val" style="color: var(--warning);" id="statUnansweredQueries">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Knowledge Coverage Rate</div>
+          <div class="stat-val" style="color: #60a5fa;" id="statCoverageRate">—%</div>
+        </div>
+      </div>
+
+      <!-- Unanswered Questions / Policy Gap Log (PRD Section 8 US-08) -->
+      <div class="admin-table-card" style="margin-bottom: 20px;">
+        <div class="table-top">
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fde68a;">
+              ⚠ Policy Gap Analysis — Unanswered / Refused Queries
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              Questions relationship managers asked that lacked sufficient approved documentation. Use these gaps to prioritize ingestion of new policy circulars.
+            </p>
+          </div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Inquiry Question</th>
+              <th>Guardrail Trigger</th>
+              <th>Policy Reason</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="unansweredTableBody">
+            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No policy gaps recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Frequently Asked Questions -->
+      <div class="admin-table-card">
+        <div class="table-top">
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 700;">Frequently Asked Questions (FAQ Rankings)</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Most frequent RM inquiry topics across the wealth advisory division.</p>
+          </div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Inquiry Topic</th>
+              <th>Frequency</th>
+              <th>Last Advisory Status</th>
+            </tr>
+          </thead>
+          <tbody id="faqTableBody">
+            <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Loading FAQs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUB-TAB 3: RM FEEDBACK REVIEW (PRD SECTION 7 FR-08) -->
+    <div id="adminTabFeedback" hidden>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-lbl">Total Feedback Submissions</div>
+          <div class="stat-val" id="statFeedbackTotal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Helpful Ratings</div>
+          <div class="stat-val" style="color: var(--emerald);" id="statFeedbackHelpful">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">Not Helpful Ratings</div>
+          <div class="stat-val" style="color: var(--danger);" id="statFeedbackNotHelpful">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">RM Satisfaction Rate</div>
+          <div class="stat-val" style="color: #60a5fa;" id="statSatisfactionRate">—%</div>
+        </div>
+      </div>
+
+      <div class="admin-table-card">
+        <div class="table-top">
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 700;">Relationship Manager Feedback Log</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              Audited feedback and suggestions submitted by relationship managers on advisory answers.
+            </p>
+          </div>
+        </div>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Inquiry Question</th>
+              <th>Rating</th>
+              <th>RM Notes / Comments</th>
+            </tr>
+          </thead>
+          <tbody id="feedbackTableBody">
+            <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No feedback recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
   </main>
+
+  <!-- Upload Modal -->
+  <div class="modal-overlay" id="uploadModal" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">Upload Approved Document</div>
+        <button class="btn-close" type="button" onclick="toggleUploadModal(false)" aria-label="Close">&times;</button>
+      </div>
+      <form id="uploadForm" onsubmit="handleUpload(event)">
+        <div class="form-group">
+          <label>Document File (.txt, .md, .pdf, .html)</label>
+          <input type="file" id="uploadFile" required accept=".txt,.md,.pdf,.html,.htm" />
+        </div>
+        <div class="form-group">
+          <label>Document Category</label>
+          <select id="docTypeSelect">
+            <option value="investment_policy">Investment Policy</option>
+            <option value="tax_rules">Tax Rules & Circulars</option>
+            <option value="product_brochure">Product Brochure</option>
+            <option value="eligibility_guidelines">Eligibility Guidelines</option>
+            <option value="compliance_policy">Compliance Policy</option>
+            <option value="corporate_report">Corporate Report</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Product / Scope</label>
+            <input type="text" id="docProductInput" value="Global Wealth" placeholder="e.g. Moderate Growth" required />
+          </div>
+          <div class="form-group">
+            <label>Version Tag</label>
+            <input type="text" id="docVersionInput" value="v1.0" placeholder="e.g. v3.2" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Initial Approval Status</label>
+          <select id="docStatusSelect">
+            <option value="approved">Approved (Live for RM Retrieval)</option>
+            <option value="draft">Draft (Excluded from RM Queries)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;" id="uploadSubmitBtn">
+          Ingest & Live Index
+        </button>
+        <div id="uploadToast" class="upload-toast" hidden></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer with Team Credits -->
+  <footer>
+    <div>WealthConnect v2.0 • AI-Powered Wealth Advisory Knowledge Assistant</div>
+    <div class="team-badge">Team: G Yashmieen • Dodla Bhanu Teja Reddy • Kishore R</div>
+  </footer>
+
 </div>
 
 <script>
-  // ── Config ──────────────────────────────────────────────────────────────
   const API_URL = "http://localhost:8000";
 
-  // ── State ───────────────────────────────────────────────────────────────
-  let isStreaming  = false;
-  let lastQuestion = "";
-  let partialAnswer = "";
-  let hadCitations  = false;
-  let streamInterrupted = false;
+  // Auth Elements
+  const authGatewayOverlay  = document.getElementById("authGatewayOverlay");
+  const authUsernameInput   = document.getElementById("authUsernameInput");
+  const authPasswordInput   = document.getElementById("authPasswordInput");
+  const authErrorAlert      = document.getElementById("authErrorAlert");
+  const btnLoginSubmit      = document.getElementById("btnLoginSubmit");
+  const userNameDisplay     = document.getElementById("userNameDisplay");
+  const userRoleTag         = document.getElementById("userRoleTag");
 
-  // ── DOM refs ─────────────────────────────────────────────────────────────
+  // Elements - General
+  const rmView          = document.getElementById("rmView");
+  const adminView       = document.getElementById("adminView");
+  const btnRoleRM       = document.getElementById("btnRoleRM");
+  const btnRoleAdmin    = document.getElementById("btnRoleAdmin");
+  const chunksBadge     = document.getElementById("chunksBadge");
+  const modelBadge      = document.getElementById("modelBadge");
+  const cacheBadge      = document.getElementById("cacheBadge");
+
+  // Elements - RM Workspace
   const questionInput   = document.getElementById("questionInput");
   const askBtn          = document.getElementById("askBtn");
-  const statusBar       = document.getElementById("statusBar");
+  const streamToggle    = document.getElementById("streamToggle");
+  const latencyDisplay  = document.getElementById("latencyDisplay");
   const statusDot       = document.getElementById("statusDot");
   const statusText      = document.getElementById("statusText");
-  const emptyState      = document.getElementById("emptyState");
-  const errorBox        = document.getElementById("errorBox");
-  const errorMsg        = document.getElementById("errorMsg");
   const answerCard      = document.getElementById("answerCard");
   const answerText      = document.getElementById("answerText");
-  const incompleteBadge = document.getElementById("incompleteBadge");
-  const citationsSection= document.getElementById("citationsSection");
+  const refusalBanner   = document.getElementById("refusalBanner");
+  const refusalMessage  = document.getElementById("refusalMessage");
+  const citationsPanel  = document.getElementById("citationsPanel");
   const citationList    = document.getElementById("citationList");
+  const sourcesCount    = document.getElementById("sourcesCount");
+  const cacheIndicator  = document.getElementById("cacheIndicator");
+  const recentList      = document.getElementById("recentList");
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-  function setStatus(label, state) {
-    statusDot.className = "dot " + (state || "");
-    statusText.textContent = label;
+  // Elements - Feedback
+  const btnHelpful          = document.getElementById("btnHelpful");
+  const btnNotHelpful       = document.getElementById("btnNotHelpful");
+  const feedbackCommentBox  = document.getElementById("feedbackCommentBox");
+  const feedbackCommentInput= document.getElementById("feedbackCommentInput");
+  const feedbackToast       = document.getElementById("feedbackToast");
+
+  // Elements - Upload Modal
+  const uploadModal     = document.getElementById("uploadModal");
+  const uploadToast     = document.getElementById("uploadToast");
+  const uploadSubmitBtn = document.getElementById("uploadSubmitBtn");
+
+  // State
+  let isSubmitting = false;
+  let activePersona = "rm";
+  let currentAnswer = "";
+  let currentQuestion = "";
+  let currentFeedbackRating = null;
+  let currentUser = null;
+
+  // ---------------------------------------------------------------------------
+  // User Authentication & Session Management
+  // ---------------------------------------------------------------------------
+
+  function checkSession() {
+    const stored = sessionStorage.getItem("wc_user") || localStorage.getItem("wc_user");
+    if (stored) {
+      try {
+        currentUser = JSON.parse(stored);
+        applyUserSession(currentUser);
+        return;
+      } catch (_) {}
+    }
+    // Show login overlay if not authenticated
+    showLoginGateway(true);
   }
 
-  function setStreaming(val) {
-    isStreaming = val;
-    askBtn.disabled = val;
-    questionInput.disabled = val;
+  function showLoginGateway(show) {
+    if (show) {
+      authGatewayOverlay.removeAttribute("hidden");
+      authGatewayOverlay.style.display = "flex";
+      authUsernameInput.focus();
+    } else {
+      authGatewayOverlay.setAttribute("hidden", "");
+      authGatewayOverlay.style.display = "none";
+    }
+  }
+
+  function applyUserSession(user) {
+    currentUser = user;
+    userNameDisplay.textContent = user.full_name;
+
+    const isRM = user.role === "relationship_manager";
+    userRoleTag.className = "role-badge-tag " + (isRM ? "rm" : "admin");
+    userRoleTag.textContent = isRM ? "RM Advisor" : "Wealth Admin";
+
+    // Enforce role view landing
+    if (isRM) {
+      switchPersona("rm");
+      btnRoleAdmin.title = "Restricted to Wealth Division Administrators";
+    } else {
+      switchPersona("admin");
+      btnRoleAdmin.title = "";
+    }
+
+    showLoginGateway(false);
+    fetchTelemetry();
+  }
+
+  async function handleManualLogin(e) {
+    e.preventDefault();
+    const uname = authUsernameInput.value.trim();
+    const pwd = authPasswordInput.value.trim();
+    if (!uname || !pwd) return;
+
+    authErrorAlert.hidden = true;
+    btnLoginSubmit.disabled = true;
+    btnLoginSubmit.textContent = "Verifying...";
+
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: uname, password: pwd }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === "success") {
+        sessionStorage.setItem("wc_user", JSON.stringify(data.user));
+        localStorage.setItem("wc_user", JSON.stringify(data.user));
+        applyUserSession(data.user);
+      } else {
+        authErrorAlert.hidden = false;
+        authErrorAlert.textContent = data.detail || "Authentication failed. Invalid username or password.";
+      }
+    } catch (err) {
+      authErrorAlert.hidden = false;
+      authErrorAlert.textContent = "Network error communicating with authentication service.";
+    } finally {
+      btnLoginSubmit.disabled = false;
+      btnLoginSubmit.textContent = "Authenticate & Access Portal →";
+    }
+  }
+
+  async function quickLogin(username, password) {
+    authUsernameInput.value = username;
+    authPasswordInput.value = password;
+    const form = document.querySelector(".auth-form");
+    if (form) {
+      const evt = new Event("submit", { cancelable: true });
+      form.dispatchEvent(evt);
+    }
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem("wc_user");
+    localStorage.removeItem("wc_user");
+    currentUser = null;
+    showLoginGateway(true);
+    authUsernameInput.value = "";
+    authPasswordInput.value = "";
+    authErrorAlert.hidden = true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Persona & Admin Tabs Navigation
+  // ---------------------------------------------------------------------------
+
+  function switchPersona(persona) {
+    if (persona === "admin" && currentUser && currentUser.role === "relationship_manager") {
+      alert("Access Restricted: Wealth Admin privileges are required to view governance & document versioning. Please sign in with Wealth Admin credentials.");
+      return;
+    }
+
+    activePersona = persona;
+    if (persona === "rm") {
+      btnRoleRM.classList.add("active");
+      btnRoleAdmin.classList.remove("active");
+      rmView.hidden = false;
+      adminView.hidden = true;
+    } else {
+      btnRoleRM.classList.remove("active");
+      btnRoleAdmin.classList.add("active");
+      rmView.hidden = true;
+      adminView.hidden = false;
+      loadAdminData();
+    }
+  }
+
+  function switchAdminTab(tab) {
+    document.getElementById("tabBtnDocs").classList.toggle("active", tab === "docs");
+    document.getElementById("tabBtnQuestions").classList.toggle("active", tab === "questions");
+    document.getElementById("tabBtnFeedback").classList.toggle("active", tab === "feedback");
+
+    document.getElementById("adminTabDocs").hidden = (tab !== "docs");
+    document.getElementById("adminTabQuestions").hidden = (tab !== "questions");
+    document.getElementById("adminTabFeedback").hidden = (tab !== "feedback");
+
+    if (tab === "docs") loadDocumentsTable();
+    if (tab === "questions") loadQuestionsAnalytics();
+    if (tab === "feedback") loadFeedbackTable();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Telemetry & Startup
+  // ---------------------------------------------------------------------------
+
+  async function fetchTelemetry() {
+    try {
+      const [hRes, mRes] = await Promise.all([
+        fetch(`${API_URL}/health`),
+        fetch(`${API_URL}/metrics`),
+      ]);
+      if (hRes.ok) {
+        const h = await hRes.json();
+        chunksBadge.innerHTML = `<span class="badge-dot"></span> KB: ${h.chunks} chunks`;
+        modelBadge.textContent = `Model: ${h.model}`;
+      }
+      if (mRes.ok) {
+        const m = await mRes.json();
+        cacheBadge.textContent = `Cache: ${Math.round((m.cache.hit_ratio || 0) * 100)}%`;
+      }
+    } catch (_) {}
+  }
+
+  function setStatus(text, state) {
+    statusDot.className = "pulse-dot " + (state || "");
+    statusText.textContent = text;
   }
 
   function prefill(q) {
     questionInput.value = q;
     questionInput.focus();
+    handleAsk();
   }
 
-  function resetOutput() {
-    partialAnswer = "";
-    hadCitations  = false;
-    streamInterrupted = false;
-
-    emptyState.hidden        = true;
-    errorBox.hidden          = true;
-    answerCard.hidden        = true;
-    citationsSection.hidden  = true;
-    incompleteBadge.hidden   = true;
-
-    answerText.innerHTML     = "";
-    citationList.innerHTML   = "";
+  function resetView() {
+    answerCard.hidden = true;
+    refusalBanner.hidden = true;
+    citationsPanel.hidden = true;
+    answerText.innerHTML = "";
+    citationList.innerHTML = "";
+    cacheIndicator.textContent = "";
+    resetFeedbackWidget();
   }
 
-  // ── Citation rendering ────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
+  // Recent Inquiries Management (localStorage)
+  // ---------------------------------------------------------------------------
+
+  function saveRecentQuestion(q) {
+    try {
+      let recents = JSON.parse(localStorage.getItem("wc_recent_questions") || "[]");
+      recents = recents.filter(item => item.question !== q);
+      recents.unshift({
+        question: q,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      if (recents.length > 8) recents.pop();
+      localStorage.setItem("wc_recent_questions", JSON.stringify(recents));
+      renderRecentQuestions();
+    } catch (_) {}
+  }
+
+  function renderRecentQuestions() {
+    try {
+      const recents = JSON.parse(localStorage.getItem("wc_recent_questions") || "[]");
+      if (!recents.length) {
+        recentList.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; text-align: center; padding: 12px 0;">No recent questions yet.</div>';
+        return;
+      }
+      recentList.innerHTML = "";
+      recents.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "recent-item";
+        div.innerHTML = `
+          <div>${item.question}</div>
+          <span class="recent-time">${item.timestamp}</span>
+        `;
+        div.onclick = () => {
+          questionInput.value = item.question;
+          questionInput.focus();
+          handleAsk();
+        };
+        recentList.appendChild(div);
+      });
+    } catch (_) {}
+  }
+
+  function clearRecentHistory() {
+    localStorage.removeItem("wc_recent_questions");
+    renderRecentQuestions();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Citations & Answer Rendering
+  // ---------------------------------------------------------------------------
+
+  function formatCitationsInText(rawText) {
+    return rawText.replace(/\[(\d+)\]/g, '<span class="citation-badge" onclick="highlightCitation($1)">[$1]</span>');
+  }
+
+  function highlightCitation(index) {
+    const cards = document.querySelectorAll(".citation-card");
+    if (cards[index - 1]) {
+      cards[index - 1].scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const content = cards[index - 1].querySelector(".citation-content");
+      if (content) content.hidden = false;
+      cards[index - 1].style.borderColor = "var(--accent)";
+      setTimeout(() => { cards[index - 1].style.borderColor = ""; }, 1800);
+    }
+  }
+
   function renderCitations(sources) {
     if (!sources || sources.length === 0) return;
-
-    hadCitations = true;
+    citationsPanel.hidden = false;
+    sourcesCount.textContent = `(${sources.length})`;
     citationList.innerHTML = "";
 
-    sources.forEach((src, index) => {
-      const details = document.createElement("details");
+    sources.forEach((src, idx) => {
+      const card = document.createElement("div");
+      card.className = "citation-card";
+      const marker = src.label || `[${idx + 1}]`;
+      const docName = src.document || src.source || "approved_document";
+      const section = src.section || "General";
+      const version = src.version || "v1.0";
+      const category = src.category || "General Policy";
+      const score = typeof src.score === "number" ? src.score.toFixed(4) : "—";
+      const snippet = src.text || "Direct factual context retrieved from approved bank material.";
 
-      const summary = document.createElement("summary");
-      summary.innerHTML = `
-        <span class="citation-label">${escHtml(src.label || `[${index + 1}]`)}</span>
-        <span class="citation-meta">
-          <span class="doc">${escHtml(src.source)}</span>
-          ${src.section ? ` — <span>${escHtml(src.section)}</span>` : ""}
-          <br/>
-          <span class="chunk-id">${escHtml(src.chunk_id || "retrieved source")}</span>
-        </span>
-        <span class="citation-score">score: ${typeof src.score === "number" ? src.score.toFixed(4) : "—"}</span>
+      card.innerHTML = `
+        <div class="citation-header" onclick="this.nextElementSibling.hidden = !this.nextElementSibling.hidden">
+          <div class="citation-lead">
+            <span class="citation-pill">${marker}</span>
+            <span class="citation-title">${docName}</span>
+            <span class="version-tag">${version}</span>
+            <span class="category-tag">${category}</span>
+            <span class="citation-section">— ${section}</span>
+          </div>
+          <span class="citation-score">score: ${score}</span>
+        </div>
+        <div class="citation-content" hidden>${snippet}</div>
       `;
-      details.appendChild(summary);
-
-      const body = document.createElement("div");
-      body.className = "citation-body";
-      body.innerHTML = `<p>${escHtml(src.text || "This source was retrieved for the answer.")}</p>`;
-      details.appendChild(body);
-
-      citationList.appendChild(details);
+      citationList.appendChild(card);
     });
-
-    citationsSection.hidden = false;
   }
 
-  function escHtml(str) {
-    return String(str ?? "")
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;");
+  // ---------------------------------------------------------------------------
+  // RAG Query Handler
+  // ---------------------------------------------------------------------------
+
+  async function handleAsk() {
+    const q = questionInput.value.trim();
+    if (!q || q.length < 3 || isSubmitting) return;
+
+    currentQuestion = q;
+    resetView();
+    saveRecentQuestion(q);
+
+    isSubmitting = true;
+    askBtn.disabled = true;
+    questionInput.disabled = true;
+
+    const useStream = streamToggle.checked;
+    const startTime = performance.now();
+
+    if (useStream) {
+      await runStreamingQuery(q, startTime);
+    } else {
+      await runBatchQuery(q, startTime);
+    }
+
+    isSubmitting = false;
+    askBtn.disabled = false;
+    questionInput.disabled = false;
+    questionInput.focus();
+    fetchTelemetry();
   }
 
-  // ── Query handler ─────────────────────────────────────────────────────────
-  async function askAnswer(question) {
-    resetOutput();
-    setStreaming(true);
-    setStatus("Searching approved sources…", "streaming");
-
+  async function runBatchQuery(question, startTime) {
+    setStatus("Searching approved bank sources...", "streaming");
     try {
       const response = await fetch(`${API_URL}/query`, {
         method: "POST",
@@ -443,57 +1934,406 @@
         body: JSON.stringify({ question }),
       });
 
-      if (!response.ok) {
-        let detail = `Server returned ${response.status}`;
-        try {
-          const payload = await response.json();
-          detail = payload.detail || detail;
-        } catch (_) {}
-        throw new Error(detail);
+      const elapsed = Math.round(performance.now() - startTime);
+      latencyDisplay.textContent = `Latency: ${elapsed}ms`;
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      currentAnswer = data.answer;
+
+      if (data.status && data.status.startsWith("refused")) {
+        refusalBanner.hidden = false;
+        refusalMessage.textContent = data.answer;
+        setStatus("Query withheld by compliance guardrails", "refused");
+      } else {
+        answerCard.hidden = false;
+        answerText.innerHTML = formatCitationsInText(data.answer);
+        if (data.cached) cacheIndicator.textContent = "⚡ Cached Result";
+        renderCitations(data.sources);
+        setStatus("Grounded advisory answer ready", "done");
+      }
+    } catch (err) {
+      setStatus("Failed to reach RAG service", "error");
+    }
+  }
+
+  async function runStreamingQuery(question, startTime) {
+    setStatus("Streaming verified context...", "streaming");
+    try {
+      const response = await fetch(`${API_URL}/query/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullTokens = "";
+
+      answerCard.hidden = false;
+      answerText.innerHTML = '<span class="cursor"></span>';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const event = JSON.parse(line.slice(6));
+
+          if (event.type === "citations") {
+            renderCitations(event.sources);
+          } else if (event.type === "token") {
+            fullTokens += event.text;
+            currentAnswer = fullTokens;
+            answerText.innerHTML = formatCitationsInText(fullTokens) + '<span class="cursor"></span>';
+          } else if (event.type === "done") {
+            answerText.innerHTML = formatCitationsInText(fullTokens);
+            currentAnswer = fullTokens;
+            const elapsed = Math.round(performance.now() - startTime);
+            latencyDisplay.textContent = `Latency: ${elapsed}ms`;
+
+            if (event.status && event.status.startsWith("refused")) {
+              refusalBanner.hidden = false;
+              refusalMessage.textContent = fullTokens;
+              answerCard.hidden = true;
+              setStatus("Refused by guardrails", "refused");
+            } else {
+              setStatus("Grounded advisory answer complete", "done");
+            }
+          }
+        }
+      }
+    } catch (err) {
+      setStatus("Streaming connection error", "error");
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Feedback Widget Logic
+  // ---------------------------------------------------------------------------
+
+  function resetFeedbackWidget() {
+    btnHelpful.className = "btn-feedback";
+    btnNotHelpful.className = "btn-feedback";
+    feedbackCommentBox.hidden = true;
+    feedbackToast.hidden = true;
+    feedbackCommentInput.value = "";
+    currentFeedbackRating = null;
+  }
+
+  function setFeedbackRating(rating) {
+    currentFeedbackRating = rating;
+    btnHelpful.className = "btn-feedback" + (rating === "helpful" ? " active-helpful" : "");
+    btnNotHelpful.className = "btn-feedback" + (rating === "not_helpful" ? " active-not-helpful" : "");
+    feedbackCommentBox.hidden = false;
+    feedbackCommentInput.focus();
+    submitFeedback(false);
+  }
+
+  async function submitFeedbackComment() {
+    await submitFeedback(true);
+  }
+
+  async function submitFeedback(isFinal) {
+    if (!currentFeedbackRating || !currentQuestion) return;
+    try {
+      const res = await fetch(`${API_URL}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: currentQuestion,
+          answer: currentAnswer,
+          rating: currentFeedbackRating,
+          comment: feedbackCommentInput.value.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        feedbackToast.hidden = false;
+        if (isFinal) {
+          feedbackCommentBox.hidden = true;
+        }
+      }
+    } catch (_) {}
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin Dashboard Data Loading
+  // ---------------------------------------------------------------------------
+
+  async function loadAdminData() {
+    loadDocumentsTable();
+    loadQuestionsAnalytics();
+    loadFeedbackTable();
+  }
+
+  async function loadDocumentsTable() {
+    try {
+      const res = await fetch(`${API_URL}/admin/documents`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      document.getElementById("statTotalDocs").textContent = data.summary.total;
+      document.getElementById("statApprovedDocs").textContent = data.summary.approved;
+      document.getElementById("statDraftDocs").textContent = data.summary.draft;
+      document.getElementById("statSupersededDocs").textContent = data.summary.superseded;
+
+      const tbody = document.getElementById("documentsTableBody");
+      tbody.innerHTML = "";
+
+      data.documents.forEach(doc => {
+        const tr = document.createElement("tr");
+        const statusClass = doc.approval_status || "approved";
+
+        tr.innerHTML = `
+          <td>
+            <strong>${doc.title || doc.name}</strong>
+            <div style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-dim);">${doc.name}</div>
+          </td>
+          <td><span class="category-tag">${doc.category || "General"}</span></td>
+          <td>${doc.product || "Wealth Division"}</td>
+          <td><span class="version-tag">${doc.version || "v1.0"}</span></td>
+          <td><span class="status-badge ${statusClass}">${statusClass}</span></td>
+          <td style="font-family: var(--font-mono);">${doc.chunks_count || 0}</td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-action" onclick="cycleDocumentStatus('${doc.name}', '${statusClass}')" title="Cycle Approved -> Superseded -> Draft">
+                Cycle Status
+              </button>
+              <button class="btn-action danger" onclick="deleteDocument('${doc.name}')" title="Delete & Purge Chunks">
+                Delete
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (_) {}
+  }
+
+  async function cycleDocumentStatus(docName, currentStatus) {
+    const nextStatusMap = {
+      "approved": "superseded",
+      "superseded": "draft",
+      "draft": "approved"
+    };
+    const newStatus = nextStatusMap[currentStatus] || "approved";
+
+    try {
+      const res = await fetch(`${API_URL}/admin/documents/${encodeURIComponent(docName)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approval_status: newStatus }),
+      });
+      if (res.ok) {
+        loadDocumentsTable();
+        fetchTelemetry();
+      }
+    } catch (_) {}
+  }
+
+  async function deleteDocument(docName) {
+    if (!confirm(`Are you sure you want to delete '${docName}' and purge its chunks from the knowledge base?`)) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/documents/${encodeURIComponent(docName)}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        loadDocumentsTable();
+        fetchTelemetry();
+      }
+    } catch (_) {}
+  }
+
+  async function loadQuestionsAnalytics() {
+    try {
+      const res = await fetch(`${API_URL}/admin/questions`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      document.getElementById("statTotalQueries").textContent = data.total_queries;
+      document.getElementById("statAnsweredQueries").textContent = data.answered_queries;
+      document.getElementById("statUnansweredQueries").textContent = data.unanswered_queries;
+      document.getElementById("statCoverageRate").textContent = `${data.coverage_rate}%`;
+
+      // Render Unanswered Log (Policy gaps)
+      const ubody = document.getElementById("unansweredTableBody");
+      if (!data.unanswered_log.length) {
+        ubody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--emerald);">✓ Zero unanswered queries. All advisory questions were grounded.</td></tr>';
+      } else {
+        ubody.innerHTML = "";
+        data.unanswered_log.forEach(item => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">${item.timestamp ? item.timestamp.replace("T", " ").slice(0, 19) : "—"}</td>
+            <td><strong>${item.question}</strong></td>
+            <td><span class="status-badge superseded">${item.status}</span></td>
+            <td style="font-size: 0.8rem; color: #fde68a;">${item.reason || "Context threshold not met"}</td>
+            <td>
+              <button class="btn-action" onclick="flagForUpload('${encodeURIComponent(item.question)}')">
+                Ingest Policy
+              </button>
+            </td>
+          `;
+          ubody.appendChild(tr);
+        });
       }
 
-      const result = await response.json();
-      answerCard.hidden = false;
-      answerText.textContent = result.answer || "No answer was returned.";
-      renderCitations(result.sources || []);
-      const refused = result.status && result.status.startsWith("refused");
-      setStatus(refused ? "No supporting context found" : "Grounded answer ready", refused ? "error" : "done");
+      // Render FAQs
+      const fbody = document.getElementById("faqTableBody");
+      if (!data.frequent_questions.length) {
+        fbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No queries recorded yet.</td></tr>';
+      } else {
+        fbody.innerHTML = "";
+        data.frequent_questions.forEach(f => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${f.question}</td>
+            <td style="font-family: var(--font-mono); font-weight: 600;">${f.count} queries</td>
+            <td><span class="status-badge ${f.status === 'answered' ? 'approved' : 'superseded'}">${f.status}</span></td>
+          `;
+          fbody.appendChild(tr);
+        });
+      }
+    } catch (_) {}
+  }
 
+  function flagForUpload(q) {
+    toggleUploadModal(true);
+  }
+
+  async function loadFeedbackTable() {
+    try {
+      const res = await fetch(`${API_URL}/admin/feedback`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      document.getElementById("statFeedbackTotal").textContent = data.total;
+      document.getElementById("statFeedbackHelpful").textContent = data.helpful;
+      document.getElementById("statFeedbackNotHelpful").textContent = data.not_helpful;
+      document.getElementById("statSatisfactionRate").textContent = `${data.satisfaction_rate}%`;
+
+      const tbody = document.getElementById("feedbackTableBody");
+      if (!data.feedback.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No RM feedback submitted yet.</td></tr>';
+      } else {
+        tbody.innerHTML = "";
+        data.feedback.forEach(item => {
+          const tr = document.createElement("tr");
+          const isHelpful = item.rating === "helpful";
+          tr.innerHTML = `
+            <td style="font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);">${item.timestamp}</td>
+            <td><strong>${item.question}</strong></td>
+            <td>
+              <span class="status-badge ${isHelpful ? 'approved' : 'superseded'}">
+                ${isHelpful ? '👍 Helpful' : '👎 Not Helpful'}
+              </span>
+            </td>
+            <td style="font-size: 0.82rem; color: ${item.comment ? 'var(--text)' : 'var(--text-dim)'};">
+              ${item.comment || '—'}
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    } catch (_) {}
+  }
+
+  // ---------------------------------------------------------------------------
+  // Document Upload Handling
+  // ---------------------------------------------------------------------------
+
+  function toggleUploadModal(show) {
+    if (show) {
+      uploadModal.classList.add("active");
+      uploadModal.removeAttribute("hidden");
+      uploadModal.style.display = "flex";
+      const fileInput = document.getElementById("uploadFile");
+      if (fileInput) fileInput.focus();
+    } else {
+      uploadModal.classList.remove("active");
+      uploadModal.setAttribute("hidden", "");
+      uploadModal.style.display = "none";
+      const fileInput = document.getElementById("uploadFile");
+      if (fileInput) fileInput.value = "";
+    }
+    uploadToast.hidden = true;
+    uploadToast.style.display = "none";
+  }
+
+  async function handleUpload(e) {
+    e.preventDefault();
+    const fileInput = document.getElementById("uploadFile");
+    const docTypeSelect = document.getElementById("docTypeSelect");
+    const docProductInput = document.getElementById("docProductInput");
+    const docVersionInput = document.getElementById("docVersionInput");
+    const docStatusSelect = document.getElementById("docStatusSelect");
+
+    if (!fileInput.files.length) return;
+
+    uploadSubmitBtn.disabled = true;
+    uploadSubmitBtn.textContent = "Processing & Embedding...";
+
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("document_type", docTypeSelect.value);
+    formData.append("product", docProductInput.value.trim());
+    formData.append("version", docVersionInput.value.trim());
+    formData.append("approval_status", docStatusSelect.value);
+
+    try {
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        uploadToast.hidden = false;
+        uploadToast.style.display = "block";
+        uploadToast.textContent = `✓ Successfully indexed '${data.filename}' (${data.version}) into ${data.chunks_indexed} new chunks!`;
+        fetchTelemetry();
+
+        setTimeout(() => {
+          toggleUploadModal(false);
+          loadDocumentsTable();
+          if (activePersona === "rm") {
+            setStatus(`Indexed ${data.filename} (${data.chunks_indexed} chunks)`, "done");
+            questionInput.placeholder = `Ask a question about ${data.filename}...`;
+            questionInput.focus();
+          }
+        }, 1200);
+      } else {
+        alert("Upload error: " + (data.detail || "Upload failed"));
+      }
     } catch (err) {
-      showError(err.message || "Could not reach the RAG service. Is the server running?", true);
-      setStatus("Request failed", "error");
+      alert("Network error while uploading document");
     } finally {
-      setStreaming(false);
-      questionInput.focus();
+      uploadSubmitBtn.disabled = false;
+      uploadSubmitBtn.textContent = "Ingest & Live Index";
     }
   }
 
-  // ── Error display ─────────────────────────────────────────────────────────
-  function showError(message, showRetry) {
-    errorMsg.textContent = message;
-    document.getElementById("retryBtn").hidden = !showRetry;
-    errorBox.hidden = false;
-  }
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
-  function handleAsk() {
-    const q = questionInput.value.trim();
-    if (!q || q.length < 3) {
-      questionInput.focus();
-      return;
-    }
-    lastQuestion = q;
-    askAnswer(q);
-  }
-
-  function handleRetry() {
-    if (lastQuestion) askAnswer(lastQuestion);
-  }
-
-  // Enter key submits
-  questionInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !isStreaming) handleAsk();
+  // Modal event listeners
+  uploadModal.addEventListener("click", (e) => {
+    if (e.target === uploadModal) toggleUploadModal(false);
   });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") toggleUploadModal(false);
+  });
+  questionInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !isSubmitting) handleAsk();
+  });
+
+  // Check auth session on load
+  checkSession();
 </script>
 </body>
 </html>
